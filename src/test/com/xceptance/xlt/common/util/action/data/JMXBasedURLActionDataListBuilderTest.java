@@ -77,7 +77,10 @@ public class JMXBasedURLActionDataListBuilderTest {
 		for (int i = 0; i <= 5; i++) {
 			Assert.assertEquals(urlsExpected[i], actions.get(i).getUrlString());
 		}
-			
+		
+		// checks the parameters TODO
+
+		
 		// checks if the method of the actions is as expected
 		String[] expectedMethod = {
 				"GET",

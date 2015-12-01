@@ -260,7 +260,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 						event = reader.nextEvent();
 						argsValue = event.asCharacters().getData();
 						//DEBUG
-						System.out.println("value: " + argsValue);
+//						System.out.println("value: " + argsValue);
 						break;
 					}
 
@@ -279,7 +279,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				}
 			}
 		}
-		// save the aquired arguments TODO errorsearch
+		// save the aquired arguments 
 		NameValuePair nvp = new NameValuePair(argsName, argsValue);
 		try {
 			this.interpreter.set(nvp);
