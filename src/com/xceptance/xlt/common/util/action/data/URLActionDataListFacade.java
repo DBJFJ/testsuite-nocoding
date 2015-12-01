@@ -78,6 +78,10 @@ public class URLActionDataListFacade
         {
             resultBuilder = createCSVBuilder();
         }
+        else if (fileNameExtension.equals("jmx")) 
+        {
+        	resultBuilder = createJMXBuilder();
+        }
         else
         {
             throw new IllegalArgumentException("Illegal file type: "
@@ -85,7 +89,7 @@ public class URLActionDataListFacade
                                                + fileNameExtension
                                                + "\""
                                                + "\n"
-                                               + "Supported types: '.yaml' | '.yml' or '.csv'"
+                                               + "Supported types: '.yaml' | '.yml' or '.csv' or '.jmx'"
                                                + "\n");
         }
         return resultBuilder;
@@ -126,5 +130,14 @@ public class URLActionDataListFacade
                                                                                                  this.interpreter,
                                                                                                  actionBuilder);
         return csvBuilder;
+    }
+    
+    private JMXBasedURLActionDataListBuilder createJMXBuilder()
+    {
+    	final URLActionDataBuilder actionBuilder = new URLActionDataBuilder();
+    	final JMXBasedURLActionDataListBuilder jmxBuilder = new JMXBasedURLActionDataListBuilder(this.filePath, 
+    																							this.interpreter, 
+    																							actionBuilder);
+    	return jmxBuilder;
     }
 }
