@@ -1,5 +1,6 @@
 package test.com.xceptance.xlt.common.util.action.data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
@@ -49,6 +50,12 @@ public class JMXBasedURLActionDataListBuilderTest {
 		
 		// check the number of actions 
 		int numberOfActions = actions.size();
+		
+		// DEBUG
+//		for (int i = 0; i < actions.size(); i++) {
+//			System.out.println("NAME: " + actions.get(i).getName());
+//		}
+		
 		Assert.assertEquals(6, numberOfActions);
 		
 		// check if the names of the actions are as expected
@@ -78,8 +85,41 @@ public class JMXBasedURLActionDataListBuilderTest {
 			Assert.assertEquals(urlsExpected[i], actions.get(i).getUrlString());
 		}
 		
-		// checks the parameters TODO
-
+		// checks the parameters ...
+		
+		// all parameters one after the other in a single String 
+		// action1 + parameterName + parameterValue + action2 parameterName + 
+		// parameterValue + parameterName + parameterValues + parameter3 + ...
+		// what matters are the resolved values
+		String allParametersInActions = "";
+		String allParametersInActionsExpected = "01qiuzauztestsomthingsomething2qblut3"
+												+"qblue4qdress%20flora5qdress%20floral";
+		
+		for (int i = 0; i <= 5; i++) {
+			List<NameValuePair> parameters = actions.get(i).getParameters();
+			allParametersInActions = allParametersInActions + i;
+			for (NameValuePair parameter : parameters) {
+				allParametersInActions = allParametersInActions + parameter.getName() + parameter.getValue();
+			}
+		}
+		Assert.assertEquals(allParametersInActionsExpected, allParametersInActions);
+		
+		// checks parameter encoding 
+		// Note: TSNC defaults to true, Jmeter to false
+		// In Jmeter encoding can be defined for every parameter
+		// in TSNC it's defined for every parameter pair in an action
+		boolean[] encodeParametersExpected = {
+				true,
+				true,
+				false,
+				false,
+				false,
+				false
+		};
+		for (int i = 0; i <= 5; i++) {
+			URLActionData action = actions.get(i);
+			Assert.assertEquals(encodeParametersExpected[i], action.encodeParameters());
+		}
 		
 		// checks if the method of the actions is as expected
 		String[] expectedMethod = {
