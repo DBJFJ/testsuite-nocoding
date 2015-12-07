@@ -12,8 +12,12 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.Characters;
+import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
+
+import org.apache.xerces.dom.AttrNSImpl;
 
 import bsh.EvalError;
 
@@ -37,6 +41,89 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  */
 public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
+	/*
+	 * if the getAttributeValue(attributeName) method was used but the attribute wasn't found,
+	 * it will return this value instead
+	 */
+	private final String NOTFOUND = "Attribute not found";
+	
+	/*
+	 * <p>The following constant are used for the tagnames in Jmeter. 
+	 * For example, in <Arguments ...> 'Arguments' is the tag name for 
+	 * the place where variables are defined.</p>
+	 * 
+	 * Their names follow the theme T (for tag) + NAME + abbreviation of their function.
+	 * An "S" at the end signifies plural. Example: TNAMEVARS for tagNameVariables.
+	 */
+	
+	private final String TNAMEACTION = "HTTPSamplerProxy"; 
+	
+	private final String TNAMEVARS = "Arguments";
+	
+	private final String TNAMEVAR = "elementProp";
+	
+	private final String TNAMEPARAMS = "collectionProp";
+	
+	private final String TNAMEPARAM = "elementProp";
+	
+	/*
+	 * <p>The following constant are used for the attribute names in Jmeter. 
+	 * For example, in <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" 
+	 * testname="test for correcting the mistake afterwards 1" enabled="true"> 
+	 * 'testname' is the attribute name for the name of the attribute which defines the actin name.
+	 * 
+	 * Their names follow the theme ATTR (for attribute) + N (for name) + abbreviation of their function.
+	 * An "S" at the end signifies plural. Example: ATTRNACTIONNAME for attributeNameActionName.
+	 */
+	
+	private final String ATTRNACTIONNAME = "testname";
+	
+	private final String ATTRNELETYPE = "elementType";
+	
+	/*
+	 * <p>the following is a name attribute used to identify what kind of element the tag
+	 * is supposed to stand for. It is basically used as a second tag name.</p>
+	 * <ul>Example: 
+	 * <li> <stringProp name="HTTPSampler.domain">${host}/search</stringProp>
+     * <li> <stringProp name="HTTPSampler.port"></stringProp>
+     * <li> <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+     * <li> <stringProp name="HTTPSampler.response_timeout"></stringProp>
+     * <li> <stringProp name="HTTPSampler.protocol"></stringProp>
+     * </ul>
+	 */
+	private final String ATTRNNAME = "name";
+	
+	/*
+	 * <p>The following constant are used for the attribute values in Jmeter. 
+	 * For example, in  <stringProp name="HTTPSampler.domain">${host}/search</stringProp>
+	 * 'stringProp' is the tag name, 'name' an attribute name and 'HTTPSampler.domain' an 
+	 * attribute value.</p>
+	 * 
+	 * Their names follow the theme ATTR (for attribute) + V (for value) + abbreviation of their function.
+	 * An "S" at the end signifies plural. Example: ATTRVACTIONURL for attributeValueActionUrl.
+	 */
+	
+	private final String ATTRVACTIONURL = "HTTPSampler.domain";
+	
+	private final String ATTRVACTIONMETHOD = "HTTPSampler.method";
+	
+	private final String ATTRVACTIONPARAM = "Arguments.arguments";
+	
+	private final String ATTRVELEISVAR = "Argument";
+	
+	private final String ATTRVELEISPARAM = "HTTPArgument";
+	
+	private final String ATTRVVARNAME = "Argument.name";
+	
+	private final String ATTRVVARVALUE = "Argument.value";
+	
+	private final String ATTRVENCODEPARAM = "HTTPArgument.always_encode";
+	
+	private final String ATTRVPARAMNAME = "Argument.name";
+	
+	private final String ATTRVPARAMVALUE = "Argument.value";
+	
+	
 	private List<URLActionData> actions = new ArrayList<URLActionData>();
 
 	public JMXBasedURLActionDataListBuilder(final String filePath,
@@ -75,23 +162,29 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 					// check it's name and delegate to a subfunction accordingly
 					StartElement se = event.asStartElement();			//TODO getTagName
-					QName name = se.getName();						
+					String name = getTagName(se);					
 
-					if (name.toString().equals("HTTPSamplerProxy")) {			//TODO switch Case instead
-						// an HTTPSamplerProxy is aquivalent to an HttpRequest
-						// is aquivalent to an action											
-						// get and set the testname
-						Attribute actionName = se.getAttributeByName(new QName(			//TODO getAttributeName
-								"testname"));
-						String testname = actionName.getValue();
-
+					switch (name) {
+					
+					case TNAMEACTION : {
+						
+						// an TNAMEACTION is aquivalent to an HttpRequest
+						// is aquivalent to an action get and set the testname
+						String actionName = getAttributeValue(ATTRNACTIONNAME, se);
 						URLActionData action = readAction(reader,
-								actionBuilder, testname);
+								actionBuilder, actionName);
 						actions.add(action);
+						break;
 					}
-					if (name.toString().equals("Arguments")) {
+					case TNAMEVARS : {
+						
 						// read the variables and stores them
 						readVariables(actionBuilder, reader);
+						break;
+					}
+					default : {
+						break;
+					}
 					}
 				}
 			}
@@ -111,9 +204,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/*
 	 * <p>Is called when the main parsing method {@link #buildURLActionDataList}
-	 * comes upon a StartElement for an action (HTTPSamplerProxy). Parses
-	 * the file and creates the action with the appropriate parameters </p>
-	 * <p>Returns the action when it comes upon the EndElement. </p>
+	 * comes upon a StartElement for an action (TNAMEACTION). Parses
+	 * the file and creates the action with the appropriate properties </p>
+	 * <p>Returns the action when it comes upon the EndElement.</p>
 	 */
 	private URLActionData readAction(XMLEventReader reader,
 			URLActionDataBuilder actionBuilder, String testName)
@@ -124,12 +217,12 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		actionBuilder.setInterpreter(interpreter);
 
 		// keep reading until an EndElement with the tag name of
-		// HTTPSamplerProxy is the next element
+		// TNAMEACTION is the next element
 		while (true) {
-			
 			if (reader.peek().isEndElement()) {
-				if (reader.peek().asEndElement().getName().toString()
-						.equals("HTTPSamplerProxy")) {
+				EndElement ee = reader.peek().asEndElement();
+				String name = getTagName(ee);
+				if (name.equals(TNAMEACTION)) {
 					break;
 				}
 			}
@@ -141,40 +234,33 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				StartElement se = event.asStartElement();
 
 				// and get the attribute for 'name'
-				Attribute attributeName = se.getAttributeByName(new QName(		//TODO getAttributeName
-						"name"));
+				String name = getAttributeValue(ATTRNNAME, se);
 
-				// if it exists and has a certain value
-				if (attributeName != null) {
-					String name = attributeName.getValue();
-
-					// if the name attribute corresponds to an action parameter,
-					// set the appropriate action parameter to the content
-					switch (name) {
-					case "HTTPSampler.domain": {
-						// read the content
-						event = reader.nextEvent();
-						String content = event.asCharacters().getData();
-						actionBuilder.setUrl(content);
-						break;
-					}
-					case "HTTPSampler.method": {
-						// read the content
-						event = reader.nextEvent();
-						String content = event.asCharacters().getData();
-						actionBuilder.setMethod(content);
-						break;
-					}
-					case "Arguments.arguments": {
-						// read the parameters					
-						readParameters(actionBuilder, reader);
-						break;
-
-					}
-					default: {
-						break;
-					}
-					}
+				// if the name attribute corresponds to an action parameter,
+				// set the appropriate action parameter to the content
+				switch (name) {
+				case ATTRVACTIONURL: {
+					// read the content
+					event = reader.nextEvent();
+					String content = event.asCharacters().getData();
+					actionBuilder.setUrl(content);
+					break;
+				}
+				case ATTRVACTIONMETHOD: {
+					// read the content
+					event = reader.nextEvent();
+					String content = event.asCharacters().getData();
+					actionBuilder.setMethod(content);
+					break;
+				}
+				case ATTRVACTIONPARAM: {
+					// read the parameters					
+					readParameters(actionBuilder, reader);
+					break;
+				}
+				default: {
+					break;
+				}
 				}
 			}
 		}
@@ -184,18 +270,19 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 
 	/*
-	 * is called if the tag name of a StartElement equals 'Arguments' parses
-	 * multiple arguments and saves them in the ParameterInterpreter
+	 * <p>Is called if the tag name of a StartElement equals TNAMEVARS. Reads
+	 * multiple variables and stores them in the ParameterInterpreter</p>
 	 */
 	private void readVariables(URLActionDataBuilder actionBuilder,
 			XMLEventReader reader) throws XMLStreamException {
 		
 		// loop until the next element is an EndElement that closes
-		// the 'Arguments' tag
-		while (true) {	
-			if (reader.peek().isEndElement()) {		
-				if (reader.peek().asEndElement().getName().toString()
-						.equals("Arguments")) {
+		// the TNAMEVARS tag
+		while (true) {
+			if (reader.peek().isEndElement()) {
+				EndElement ee = reader.peek().asEndElement();
+				String name = getTagName(ee);
+				if (name.equals(TNAMEVARS)) {
 					break;
 				}
 			}
@@ -207,23 +294,16 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				StartElement se = event.asStartElement();
 
 				// and has an 'elementType' attribute
-				Attribute attributeElementType = se							//TODO getAttribute
-						.getAttributeByName(new QName("elementType"));
-				if (attributeElementType != null) {
+				String elementType = getAttributeValue(ATTRNELETYPE, se);
 
-					// and get it if it exists
-					String elementType = attributeElementType.getValue();
+				// and get the elements tag name
+				String name = getTagName(se);
 
-					// and get the elements tag name
-					QName qname = se.getName();								//TODO getTagName
-					String name = qname.getLocalPart();
-
-					// if they both fit and it looks like a single argument,
-					// call the readArgument method to let it read it
-					if (name.equals("elementProp")
-							&& elementType.equals("Argument")) {
-						readVariable(reader);
-					}
+				// if they both fit and it looks like a single argument,
+				// call the readArgument method to let it read it
+				if (name.equals(TNAMEVAR)
+						&& elementType.equals(ATTRVELEISVAR)) {
+					readVariable(reader);
 				}
 			}
 		}
@@ -239,46 +319,42 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		String argsValue = null;
 		
 		// loop until the next Element is an EndElement with 
-		// the tag name of 'elementProp'
+		// the tag name of TNAMEVAR
 		while (true) {
 			if (reader.peek().isEndElement()) {
-				if (reader.peek().asEndElement().getName().toString()
-						.equals("elementProp")) {
-					break;
+			EndElement ee = reader.peek().asEndElement();
+			String name = getTagName(ee);
+			if (name.equals(TNAMEVAR)) {
+				break;
 				}
 			}
-			
+		
 			XMLEvent event = reader.nextEvent();
 
-			// look for startelements
+			// look for StartElements
 			if (event.isStartElement()) {
 
 				StartElement se = event.asStartElement();
 
 				// if the attribute for 'name' exists
-				Attribute nameAttribute = se.getAttributeByName(new QName(
-						"name"));													//TODO getAttribute
-				if (nameAttribute != null) {
-					String name = nameAttribute.getValue();
+				String name = getAttributeValue(ATTRNNAME, se);
 
-					// and it is the right String, get the content of the tag
-					// and save it as name or value, depending
-					switch (name) {
-					case "Argument.name": {
-						event = reader.nextEvent();
-						argsName = event.asCharacters().getData();					//TODO maybe getTagContent?
-						break;
-					}
-					case "Argument.value": {
-						event = reader.nextEvent();
-						argsValue = event.asCharacters().getData();
-						break;
-					}
-
+				// and it is the right String, get the content of the tag
+				// and save it as name or value, depending
+				switch (name) {
+				case ATTRVVARNAME: {
+					event = reader.nextEvent();
+					argsName = getTagContent(event);
+					break;
+				}
+				case ATTRVVARVALUE: {
+					event = reader.nextEvent();
+					argsValue =  getTagContent(event);
+					break;
+				}
 					default: {
-						break;
-					}
-					}
+					break;
+				}
 				}
 			}
 		}
@@ -293,20 +369,21 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 
 	/*
-	 * is called inside an action and parses the parameters 
+	 * Is called inside an action and parses the parameters 
 	 */
 	private void readParameters(URLActionDataBuilder actionBuilder,
 			XMLEventReader reader) throws XMLStreamException {
 		
 		List<NameValuePair> parameters = new ArrayList<>();
 		
-		// loop until the loop is closed with an EndElement with the tag name collectionProp
+		// loop until the loop is closed with an EndElement with the tag name TNAMEPARAMS
 		// all parameters should be inside a single collectionProp tag
 		while (true) {
 			if (reader.peek().isEndElement()) {
-				if (reader.peek().asEndElement().getName().toString()
-						.equals("collectionProp")) {
-					break;
+			EndElement ee = reader.peek().asEndElement();
+			String name = getTagName(ee);
+			if (name.equals(TNAMEPARAMS)) {
+				break;
 				}
 			}
 			
@@ -316,23 +393,16 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isStartElement()) {
 				StartElement se = event.asStartElement();
 
-				// and it's tag name is 'elementProb'
-				QName qname = se.getName();
-				String name = qname.getLocalPart();				//TODO getTagName
-				if (name.equals("elementProp")) {
+				// and it's tag name is ATTRNELETYPE
+				String name = getTagName(se);
+				if (name.equals(TNAMEPARAM)) {
 
-					// it has an 'elementType' attribute
-					Attribute attributeElementType = se
-							.getAttributeByName(new QName("elementType"));		//TODO getAttribute
-					if (attributeElementType != null) {
+					// if the elementType attribute is 'HTTPArgument'
+					String elementType = getAttributeValue(ATTRNELETYPE, se);
+					if (elementType.equals(ATTRVELEISPARAM)) {
 
-						// and that elementType attribute is 'HTTPArgument'
-						String elementType = attributeElementType.getValue();
-						if (elementType.equals("HTTPArgument")) {
-
-							// read the single detected parameter
-							parameters = readParameter(actionBuilder, reader, parameters);
-						}
+						// read the single detected parameter
+						parameters = readParameter(actionBuilder, reader, parameters);
 					}
 				}
 			}
@@ -345,9 +415,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 
 	/*
-	 * is called inside the readParameters method to parse a single parameter 
-	 * <p>parses a single Parameter with encoding, name and value. Sets the former and adds the NameValuePair with name and value to the c
-	 * correct list.</p>
+	 * Is called inside the readParameters method to parse a single parameter 
+	 * <p>Parses a single Parameter with encoding, name and value. 
+	 * Sets the former and adds the NameValuePair with name and value to the correct list.</p>
 	 */
 	private List<NameValuePair> readParameter(URLActionDataBuilder actionBuilder, 
 			XMLEventReader reader, List<NameValuePair> parameters) throws XMLStreamException {
@@ -356,12 +426,13 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		String parameterName = null;
 		String parameterValue = null;
 		
-		// loop until the loop is closed with an EndElement with the tag name elementProp
-		// all parameters should be inside a single elementProp tag
+		// loop until the loop is closed with an EndElement with the tag name TNAMEPARAM
+		// all parameters should be inside a single TNAMEPARAM tag
 		while (true) {
 			if (reader.peek().isEndElement()) {
-				if (reader.peek().asEndElement().getName().toString()
-						.equals("elementProp")) {
+				EndElement ee = reader.peek().asEndElement();
+				String name = getTagName(ee);
+				if (name.equals(TNAMEPARAM)) {
 					break;
 				}
 			}
@@ -373,42 +444,37 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 				StartElement se = event.asStartElement();
 
-				// if the attribute for 'name' exists
-				Attribute nameAttribute = se.getAttributeByName(new QName(					//TODO getAttribute
-						"name"));
-				if (nameAttribute != null) {			
-					String name = nameAttribute.getValue();
+				String name = getAttributeValue(ATTRNNAME, se);
 
-					// and it is the right String, get the content of the tag
-					// and set something, depending on the attributeName value
-					switch (name) {
-					case "HTTPArgument.always_encode": {
-						event = reader.nextEvent();
-						encoded = event.asCharacters().getData();							//TODO getTagContent
-						break;
-					}
-					case "Argument.value": {
-						event = reader.nextEvent();
-						parameterValue = event.asCharacters().getData();
-						break;
-					}
-					case "Argument.metadata": {
-						// there doesn't seem to be an equivalent in TSNC
-						break;
-					}
-					case "HTTPArgument.use_equals": {
-						// there doesn't seem to be an equivalent in TSNC
-						break;
-					}
-					case "Argument.name": {
-						event = reader.nextEvent();
-						parameterName = event.asCharacters().getData();
-						break;
-					}
-					default: {
-						break;
-					}
-					}
+				// if the name attribute is the right String, get the content of the tag
+				// and set something, depending on the attributeName value
+				switch (name) {
+				case ATTRVENCODEPARAM: {
+					event = reader.nextEvent();
+					encoded = getTagContent(event);
+					break;
+				}
+				case ATTRVPARAMVALUE: {
+					event = reader.nextEvent();
+					parameterValue = getTagContent(event);
+					break;
+				}
+				case "Argument.metadata": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				case "HTTPArgument.use_equals": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				case ATTRVPARAMNAME: {
+					event = reader.nextEvent();
+					parameterName = getTagContent(event);
+					break;
+				}
+				default: {
+					break;
+				}
 				}
 			}
 		}
@@ -419,5 +485,57 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		NameValuePair nameValue = new NameValuePair(parameterName, parameterValue);
 		parameters.add(nameValue);
 		return parameters;
+	}
+	
+	/*
+	 * Returns the tagname of a StartElement. Analogous to getTagName(EndElement ee).
+	 */
+	private String getTagName(StartElement se) {
+		QName qname = se.getName();
+		String name = qname.getLocalPart();
+		return name;
+	}
+	
+	/*
+	 * Returns the tagname of an EndElement. Analogous to getTagName(StartElement se).
+	 */
+	private String getTagName(EndElement ee) {
+		QName qname = ee.getName();
+		String name = qname.getLocalPart();
+		return name;
+	}
+	
+	/*
+	 * <p>Gets the attributeValue from a StartElement and an attributeName. </p>
+	 * <p>Returns the value of the NOTFOUND constant if no attribute with that name exists.</p> 
+	 */
+	private String getAttributeValue(String attributeName, StartElement se) {
+		
+		String attributeValue = null;
+		QName qname = new QName(attributeName); 
+		if (se.getAttributeByName(qname) == null) {
+			attributeValue = NOTFOUND;
+		}
+		else {
+			Attribute attribute = se.getAttributeByName(qname);
+			attributeValue = attribute.getValue();
+		}
+		
+		return attributeValue;
+	}
+	
+	private String getTagContent(XMLEvent event) {
+		if (event.isCharacters()) {
+			Characters characters = event.asCharacters();
+			String content = characters.getData();
+			return content;
+		}
+		else {
+			// this really shoudn't happen
+			//TODO log a warning
+			String warning = "An unexpected error occured during the Jmeter -> TSNC conversion." +
+							"tried to get tag content when none was there";
+			return "NaN";
+		}
 	}
 }
