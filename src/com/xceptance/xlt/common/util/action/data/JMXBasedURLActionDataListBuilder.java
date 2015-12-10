@@ -17,8 +17,6 @@ import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
-import org.apache.xerces.dom.AttrNSImpl;
-
 import bsh.EvalError;
 
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
@@ -125,6 +123,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	
 	
 	private List<URLActionData> actions = new ArrayList<URLActionData>();
+	private List<URLActionDataValidation> validations = new ArrayList<URLActionDataValidation>();
+	private URLActionDataValidationBuilder validationBuilder = new URLActionDataValidationBuilder();
 
 	public JMXBasedURLActionDataListBuilder(final String filePath,
 			final ParameterInterpreter interpreter,
@@ -203,6 +203,26 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 
 	/*
+	 * <p>Jmeter uses a tree structure. This method reads everything inside of an object,
+	 * for example everything inside of an action (like validations).</p>
+	 * 
+	 * <p>TODO Which kind of things can have other things inside them?
+	 * If it's just an action there's no need to bother ...
+	 * Actions can't have actions inside them. Ditto for Assertions and Extractors.</p>
+	 * 
+	 * <p>If the structure gets complicated, we might have to define predecessor as an enum
+	 * and call readContent at the end of major other functions. </p>
+	 * 
+	 * <p>For example: At the end of readAction readContent is called. It reads the content of the
+	 * action, adds what it has to add and gives it back. Only then is the action created.
+	 * The enum definition of predecessor includes actionBuilder.</p>
+	 */
+	private Object readContent (Object predecessor, XMLEventReader reader) {
+		
+		return null;
+	}
+	
+	/*
 	 * <p>Is called when the main parsing method {@link #buildURLActionDataList}
 	 * comes upon a StartElement for an action (TNAMEACTION). Parses
 	 * the file and creates the action with the appropriate properties </p>
@@ -264,6 +284,22 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				}
 			}
 		}
+		
+		// read hashtree start ...
+		// check if there are are assertions to perform
+		// create an List<URLActionDataValidation> validations
+		// create an List<URLActionDataStore> variablesExtracted
+		// if (assertion)
+		// (create an URLActionDataValidationBuilder) and pass it to the readAssertion method
+		// the readAssertion method returns an URLActionDataValidation, add it to validations 
+		
+		// if (extraction)
+		// (create an URLActionDataStoreBuilder) and pass it to the readExtraction method
+		// the readExtraction method returns an URLActionDataStore, add it to variablesExtracted 	
+		
+		// at the end: add the List<URLActionDataValidation> validations to the actionBuilder
+		// at the end: add the List<URLActionDataStore> variablesExtracted to the actionBuilder
+		
 		// build the action and reset the URLActionDataBuilder
 		URLActionData action = actionBuilder.build();
 		return action;
@@ -487,6 +523,13 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		return parameters;
 	}
 	
+	private List<URLActionDataValidation> readResponseAssertion(
+			URLActionDataValidationBuilder validationbuilder, XMLEventReader reader) {
+		
+		
+		return null; //TODO
+	}
+	
 	/*
 	 * Returns the tagname of a StartElement. Analogous to getTagName(EndElement ee).
 	 */
@@ -535,7 +578,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			//TODO log a warning
 			String warning = "An unexpected error occured during the Jmeter -> TSNC conversion." +
 							"tried to get tag content when none was there";
-			return "NaN";
+			System.out.println(warning);
+			return warning;
 		}
 	}
 }

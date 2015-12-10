@@ -1,6 +1,5 @@
 package test.com.xceptance.xlt.common.util.action.data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
@@ -167,5 +166,15 @@ public class JMXBasedURLActionDataListBuilderTest {
 			String valueActual = interpreter.get(name).toString();
 			Assert.assertEquals(valueExpected, valueActual);
 		}
+	}
+	
+	/*
+	 * Checks if the ResponseAssertions were read correctly. <br/>
+	 * Tests with a known test case. <br/>
+	 * TODO
+	 */
+	@Test
+	public void testResponseAssertion() {
+		
 	}
 }
