@@ -14,6 +14,7 @@ import com.xceptance.xlt.api.util.XltProperties;
 import com.xceptance.xlt.common.util.action.data.JMXBasedURLActionDataListBuilder;
 import com.xceptance.xlt.common.util.action.data.URLActionData;
 import com.xceptance.xlt.common.util.action.data.URLActionDataBuilder;
+import com.xceptance.xlt.common.util.action.data.URLActionDataStore;
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 
 /*
@@ -176,5 +177,59 @@ public class JMXBasedURLActionDataListBuilderTest {
 	@Test
 	public void testResponseAssertion() {
 		
+	}
+	
+	/*
+	 * Checks if the XPath-extractions were read correctly. <br/>
+	 * Tests with a known test case. <br/>
+	 */
+	@Test
+	public void testXPathExtraction() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath, interpreter, builder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
+		
+		String[][][] extractedExpected = {
+				
+				// for action 1
+				{}, 
+				
+				// for action 2
+				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"} },
+				
+				// for action 3
+				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"}, 
+					{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
+					
+				// for action 4
+					{},
+					
+				// for action 5
+					{ {"//*[@class=\"section-header\"]", "noHitsBanner"}, 
+						{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
+						
+				// for action 6
+						{}
+		};
+		
+		for (int iAction = 0; iAction < actions.size(); iAction++) {
+			URLActionData action = actions.get(iAction);
+			List<URLActionDataStore> extracted = action.getStore();
+			int length = extracted.size();
+			
+			for (int iExtraction = 0; iExtraction < length; iExtraction++) {
+				URLActionDataStore store = extracted.get(iExtraction);
+				
+				if (store.getSelectionMode() == URLActionDataStore.XPATH) {
+					String actualValue = store.getSelectionContent();
+					String actualName = store.getName();
+					
+					System.out.println("aaaaaaaa: " + iAction + ", " + iExtraction + ", " + actualValue + ", " + actualName);
+					
+					Assert.assertEquals(extractedExpected[iAction][iExtraction][0], actualValue);
+					Assert.assertEquals(extractedExpected[iAction][iExtraction][1], actualName);	
+					System.out.println("asdfgh: " + actualValue + ", " + actualName);
+				}
+			}
+		}
 	}
 }

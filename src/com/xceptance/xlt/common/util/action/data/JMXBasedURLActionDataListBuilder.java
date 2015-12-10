@@ -64,6 +64,26 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	
 	private final String TNAMEPARAM = "elementProp";
 	
+	private final String TNAMERESPASSERT = "ResponseAssertion";
+	
+	private final String TNAMEXPATHEXTRACT = "XPathExtractor";
+
+	/*
+	 * Jmeter supports a tree structure, but the elements below a certain node
+	 * are not inside the xml tag in the .jmx file. Instead the following tag follows many tags.
+	 * Inside that tag are the nodes below the node corresponding to the tag.</br>
+	 * For example: An action which contains an assertion
+	 * <HTTPSamplerProxy ...> ...</HTTPSamplerProxy> 
+	 * <hashtree> 
+	 * 		<ResponseAssertion ...> ... </ResponseAssertion> </br>
+	 *		<hashtree> ... </hashtree> 
+	 * </hashtree> 
+	 * 
+	 * In this example the inner 'hashtree' tag is for everything below the assertion, the 
+	 * outer 'hashtree' tag for everything below the action.
+	 */
+	private final String TNAMECONTENT = "hashTree";
+	
 	/*
 	 * <p>The following constant are used for the attribute names in Jmeter. 
 	 * For example, in <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" 
@@ -121,10 +141,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	
 	private final String ATTRVPARAMVALUE = "Argument.value";
 	
+	private final String ATTRVXPEXTREFNAME = "XPathExtractor.refname";
+	
+	private final String ATTRVXPEXTXPATH = "XPathExtractor.xpathQuery";
 	
 	private List<URLActionData> actions = new ArrayList<URLActionData>();
-	private List<URLActionDataValidation> validations = new ArrayList<URLActionDataValidation>();
-	private URLActionDataValidationBuilder validationBuilder = new URLActionDataValidationBuilder();
 
 	public JMXBasedURLActionDataListBuilder(final String filePath,
 			final ParameterInterpreter interpreter,
@@ -239,15 +260,16 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		// keep reading until an EndElement with the tag name of
 		// TNAMEACTION is the next element
 		while (true) {
-			if (reader.peek().isEndElement()) {
-				EndElement ee = reader.peek().asEndElement();
+			
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
 				String name = getTagName(ee);
 				if (name.equals(TNAMEACTION)) {
 					break;
 				}
 			}
-			
-			XMLEvent event = reader.nextEvent();
 			
 			// look for StartElements
 			if (event.isStartElement()) {
@@ -285,24 +307,111 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			}
 		}
 		
-		// read hashtree start ...
-		// check if there are are assertions to perform
-		// create an List<URLActionDataValidation> validations
-		// create an List<URLActionDataStore> variablesExtracted
-		// if (assertion)
-		// (create an URLActionDataValidationBuilder) and pass it to the readAssertion method
-		// the readAssertion method returns an URLActionDataValidation, add it to validations 
+		//DEBUG
+//		System.out.println("Location b4: " + reader.peek().getLocation());
 		
-		// if (extraction)
-		// (create an URLActionDataStoreBuilder) and pass it to the readExtraction method
-		// the readExtraction method returns an URLActionDataStore, add it to variablesExtracted 	
+		readActionContent(reader, interpreter, actionBuilder);
 		
-		// at the end: add the List<URLActionDataValidation> validations to the actionBuilder
-		// at the end: add the List<URLActionDataStore> variablesExtracted to the actionBuilder
+		//DEBUG
+//		System.out.println("Location after: " + reader.peek().getLocation());
 		
 		// build the action and reset the URLActionDataBuilder
 		URLActionData action = actionBuilder.build();
 		return action;
+	}
+
+	/*
+	 * Reads the things inside an action, namely. Called after an action. Reads until the
+	 * TNAMECONTENT tag that closes the TNAMECONTENT right after the action.
+	 * <li>XPath Extractions  
+	 * <li>Response Assertions 
+	 */
+	private void readActionContent(XMLEventReader reader,
+			ParameterInterpreter interpreter, URLActionDataBuilder actionBuilder) throws XMLStreamException {
+		
+		List<URLActionDataValidation> validations = new ArrayList<URLActionDataValidation>();
+		URLActionDataValidationBuilder validationBuilder = new URLActionDataValidationBuilder();
+		
+		List<URLActionDataStore> variablesToExtract = new ArrayList<URLActionDataStore>();
+		URLActionDataStoreBuilder storeBuilder = new URLActionDataStoreBuilder();
+		
+
+		// the first TNAMECONTENT tag should be right here, so there is no need to look for it
+		
+		// Increment for every TNAMECONTENT tag that opens, decrement for every TNAMECONTENT 
+		// tag that closes. Exit when zero is reached. (To make sure you exit with the right
+		// tag.)
+		int treeLevel = 0;
+	
+		while (true) {	
+			XMLEvent event = reader.nextEvent();
+						
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
+				String name = getTagName(ee);
+
+				if (name.equals("hashTree")) {
+					treeLevel--;
+					
+					if (treeLevel == 0) {
+						break;
+					}
+				}
+			}
+			
+			// look for StartElements
+			if (event.isStartElement()) {
+				StartElement se = event.asStartElement();
+				
+				// get the tagname
+				String tagName = getTagName(se);
+				
+				switch (tagName) {
+				case TNAMECONTENT: {
+				
+					// we just went a bit further down in the tree
+					treeLevel++;
+					break;
+				}
+				case TNAMERESPASSERT: {
+					
+					// read the Response Assertion
+					validationBuilder.setInterpreter(interpreter);
+					URLActionDataValidation validation = readResponseAssertion(validationBuilder, 
+							reader);
+					if (validation != null) {
+						validations.add(validation);
+					}
+					validationBuilder.reset();
+					break;
+				}
+				
+				case TNAMEXPATHEXTRACT: {
+					
+					// read the XPathExtractor
+					storeBuilder.setInterpreter(interpreter);
+					URLActionDataStore variableToExtract = readXPathExtractor(reader, storeBuilder);
+					if (variableToExtract != null) {
+						variablesToExtract.add(variableToExtract);
+					}
+					storeBuilder.reset();
+					break;
+				}
+		
+				default:
+					break;
+				}
+			}
+		}
+		
+		// add all the validations and extractions to the actionBuilder
+		// unless there are none, of course
+		if (validations.size() > 0) {
+			actionBuilder.setValidations(validations);
+		}
+		if (variablesToExtract.size() > 0) {
+			actionBuilder.setStore(variablesToExtract);
+		}
 	}
 
 	/*
@@ -314,17 +423,19 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		
 		// loop until the next element is an EndElement that closes
 		// the TNAMEVARS tag
+		
 		while (true) {
-			if (reader.peek().isEndElement()) {
-				EndElement ee = reader.peek().asEndElement();
+			
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
 				String name = getTagName(ee);
 				if (name.equals(TNAMEVARS)) {
 					break;
 				}
 			}
 			
-			XMLEvent event = reader.nextEvent();
-
 			// look for startelements ...
 			if (event.isStartElement()) {
 				StartElement se = event.asStartElement();
@@ -357,15 +468,15 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		// loop until the next Element is an EndElement with 
 		// the tag name of TNAMEVAR
 		while (true) {
-			if (reader.peek().isEndElement()) {
-			EndElement ee = reader.peek().asEndElement();
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+			EndElement ee = event.asEndElement();
 			String name = getTagName(ee);
 			if (name.equals(TNAMEVAR)) {
 				break;
 				}
 			}
-		
-			XMLEvent event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement()) {
@@ -414,16 +525,16 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		
 		// loop until the loop is closed with an EndElement with the tag name TNAMEPARAMS
 		// all parameters should be inside a single collectionProp tag
-		while (true) {
-			if (reader.peek().isEndElement()) {
-			EndElement ee = reader.peek().asEndElement();
+		while (true) {		
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+			EndElement ee = event.asEndElement();
 			String name = getTagName(ee);
 			if (name.equals(TNAMEPARAMS)) {
 				break;
 				}
 			}
-			
-			XMLEvent event = reader.nextEvent();
 
 			// look for startelements ...
 			if (event.isStartElement()) {
@@ -464,16 +575,16 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		
 		// loop until the loop is closed with an EndElement with the tag name TNAMEPARAM
 		// all parameters should be inside a single TNAMEPARAM tag
-		while (true) {
-			if (reader.peek().isEndElement()) {
-				EndElement ee = reader.peek().asEndElement();
+		while (true) {			
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
 				String name = getTagName(ee);
 				if (name.equals(TNAMEPARAM)) {
 					break;
 				}
 			}
-			
-			XMLEvent event = reader.nextEvent();
 
 			// look for startelements
 			if (event.isStartElement()) {
@@ -523,11 +634,90 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		return parameters;
 	}
 	
-	private List<URLActionDataValidation> readResponseAssertion(
+	private URLActionDataValidation readResponseAssertion(
 			URLActionDataValidationBuilder validationbuilder, XMLEventReader reader) {
 		
+		return null; 
+	}
+	
+	/*
+	 * Should be called when the readActionContent method comes upon a TNAMEXPATHEXTRACT tag.
+	 * Reads until the end of the TNAMEXPATHEXTRACT tag and returns an URLActionDataStore object.
+	 */
+	private URLActionDataStore readXPathExtractor(XMLEventReader reader, 
+			URLActionDataStoreBuilder storeBuilder) throws XMLStreamException {
+				
+		String name = null;
+		String selectionMode = URLActionDataStore.XPATH;
+		String selectionContent = null;
 		
-		return null; //TODO
+		// loop until the loop is closed with an EndElement with the tag name TNAMEXPATHEXTRACT
+		// all parameters should be inside a single TNAMEXPATHEXTRACT tag
+		while (true) {			
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
+				String tagName = getTagName(ee);
+				if (tagName.equals(TNAMEXPATHEXTRACT)) {
+					break;
+				}
+			}
+
+			// look for StartElements
+			if (event.isStartElement()) {
+
+				StartElement se = event.asStartElement();
+
+				String attrName = getAttributeValue(ATTRNNAME, se);
+
+				// if the name attribute is the right String, get the content of the tag
+				// and set something, depending on the attributeName value
+				switch (attrName) {
+				case "XPathExtractor.default": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				case ATTRVXPEXTREFNAME: {
+					event = reader.nextEvent();
+					name = getTagContent(event);
+					break;
+				}
+				case ATTRVXPEXTXPATH: {
+					event = reader.nextEvent();
+					selectionContent = getTagContent(event);
+					break;
+				}
+				case "XPathExtractor.validate": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				case "XPathExtractor.tolerant": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				case "XPathExtractor.namespace": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				case "XPathExtractor.fragment": {
+					// there doesn't seem to be an equivalent in TSNC
+					break;
+				}
+				// "Sample.scope", "XPathExtractor.show_warnings" and "XPathExtractor.report_errors"
+				// presumably don't have aquivalents either
+				default: {
+					break;
+				}
+				}
+			}
+		}
+		
+		storeBuilder.setName(name);
+		storeBuilder.setSelectionMode(selectionMode);
+		storeBuilder.setSelectionContent(selectionContent);
+		URLActionDataStore varToExtract = storeBuilder.build();
+		return varToExtract;
 	}
 	
 	/*
