@@ -52,6 +52,7 @@ public class URLActionDataValidation
     /**
      * Supported selection modes:
      * <ul>
+     * <li> {@link #VAR}
      * <li> {@link #XPATH}
      * <li> {@link #REGEXP}
      * <li> {@link #HEADER}
@@ -71,6 +72,8 @@ public class URLActionDataValidation
      */
     public final static Set<String> PERMITTEDVALIDATIONMODE = new HashSet<String>();
 
+    public static final String VAR = "Var";
+    
     public static final String XPATH = "XPath";
 
     public static final String REGEXP = "Regex";
@@ -89,6 +92,7 @@ public class URLActionDataValidation
 
     static
     {
+    	PERMITTEDSELECTIONMODE.add(VAR);
         PERMITTEDSELECTIONMODE.add(XPATH);
         PERMITTEDSELECTIONMODE.add(REGEXP);
         PERMITTEDSELECTIONMODE.add(HEADER);

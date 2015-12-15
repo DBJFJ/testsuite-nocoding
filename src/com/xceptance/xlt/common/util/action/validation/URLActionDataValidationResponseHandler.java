@@ -79,9 +79,12 @@ public class URLActionDataValidationResponseHandler
         final String selectionMode = validation.getSelectionMode();
 
         List<String> resultSelection = new ArrayList<String>();
-
+        
         switch (selectionMode)
         {
+        	case URLActionDataValidation.VAR: 
+        		resultSelection = handleVarValidationItem(validation);
+        		break;
             case URLActionDataValidation.XPATH:
                 resultSelection = handleXPathValidationItem(validation, result);
                 break;
@@ -102,7 +105,7 @@ public class URLActionDataValidationResponseHandler
         return resultSelection;
     }
 
-    private void validateContent(final List<String> resultSelection,
+	private void validateContent(final List<String> resultSelection,
                                  final URLActionDataValidation validation)
     {
         final String validationMode = validation.getValidationMode();
@@ -197,6 +200,15 @@ public class URLActionDataValidationResponseHandler
     {
         return result.getCookieAsStringByName(validation.getSelectionContent());
     }
+    
+
+    private List<String> handleVarValidationItem(final URLActionDataValidation validation) {
+
+		String result = validation.getSelectionContent();
+		List<String> resultList = new ArrayList<String>();
+		resultList.add(result);
+		return resultList;
+	}
 
     private List<String> handleXPathValidationItem(final URLActionDataValidation validation,
                                                    final URLActionDataExecutableResult result)

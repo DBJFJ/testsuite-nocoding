@@ -21,6 +21,8 @@ public class URLActionDataValidationResponseHandlerTest
     private static ParameterInterpreter interpreter;
 
     private static final String regexString = "href=\"[\\s\\S]*?\"";
+    
+    private static final String varString = "asdfghjkl";
 
     private static final String regexStringText = "href=\"/en/\"";
     
@@ -34,6 +36,8 @@ public class URLActionDataValidationResponseHandlerTest
     private static URLActionDataExecutableResult result;
 
     private static XPathWithHtmlPage xpwh;
+    
+    private static URLActionDataValidation validationVar;
 
     private static URLActionDataValidation validationExists;
 
@@ -62,7 +66,14 @@ public class URLActionDataValidationResponseHandlerTest
         xpwh = new XPathWithHtmlPage(mockObjects.getHtmlPage());
         result = new URLActionDataExecutableResult(mockObjects.getResponse(),
                                                    xpwh);
-
+        
+		validationVar = new URLActionDataValidation("VarExists",
+                									   URLActionDataValidation.VAR,
+                									   varString,
+                									   URLActionDataValidation.EXISTS,
+                									   varString,
+                									   interpreter);
+		
         validationExists = new URLActionDataValidation("exists",
                                                        URLActionDataValidation.REGEXP,
                                                        regexString,
@@ -120,6 +131,12 @@ public class URLActionDataValidationResponseHandlerTest
     public void testConstructor()
     {
         validationHandler = new URLActionDataValidationResponseHandler();
+    }
+    @Test
+    public void testVar()
+    {
+        validationHandler = new URLActionDataValidationResponseHandler();
+        validationHandler.validate(validationVar, result);
     }
     @Test
     public void testExists()
