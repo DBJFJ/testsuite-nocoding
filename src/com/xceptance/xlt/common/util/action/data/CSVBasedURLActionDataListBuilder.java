@@ -44,6 +44,8 @@ public class CSVBasedURLActionDataListBuilder extends URLActionDataListBuilder
     public static final String XPATH_GETTER_PREFIX = "xpath";
 
     public static final String REGEXP_GETTER_PREFIX = "regexp";
+    
+    public static final String VAR_GETTER_PREFIX = "var";
 
     public static final int DYNAMIC_GETTER_COUNT = 10;
 
@@ -75,6 +77,8 @@ public class CSVBasedURLActionDataListBuilder extends URLActionDataListBuilder
     public static final String RESPONSECODE = "ResponseCode";
 
     public static final String RESPONSECODE_DEFAULT = "200";
+    
+    public static final String VAR = "Var";
 
     public static final String XPATH = "XPath";
 
@@ -94,6 +98,7 @@ public class CSVBasedURLActionDataListBuilder extends URLActionDataListBuilder
         PERMITTEDHEADERFIELDS.add(METHOD);
         PERMITTEDHEADERFIELDS.add(PARAMETERS);
         PERMITTEDHEADERFIELDS.add(RESPONSECODE);
+        PERMITTEDHEADERFIELDS.add(VAR);
         PERMITTEDHEADERFIELDS.add(XPATH);
         PERMITTEDHEADERFIELDS.add(REGEXP);
         PERMITTEDHEADERFIELDS.add(TEXT);
@@ -103,6 +108,8 @@ public class CSVBasedURLActionDataListBuilder extends URLActionDataListBuilder
         {
             PERMITTEDHEADERFIELDS.add(XPATH_GETTER_PREFIX + i);
             PERMITTEDHEADERFIELDS.add(REGEXP_GETTER_PREFIX + i);
+            // not sure if this is necessary
+            PERMITTEDHEADERFIELDS.add(VAR_GETTER_PREFIX + i);		
         }
     }
 
@@ -251,6 +258,7 @@ public class CSVBasedURLActionDataListBuilder extends URLActionDataListBuilder
 
         final String regexpString = csvRecord.get(REGEXP);
         final String xPath = csvRecord.get(XPATH);
+        final String var = csvRecord.get(VAR);
 
         final String text = csvRecord.get(TEXT);
 
@@ -263,6 +271,11 @@ public class CSVBasedURLActionDataListBuilder extends URLActionDataListBuilder
         {
             selectionMode = URLActionDataValidation.XPATH;
             selectionValue = xPath;
+        }
+        else if (StringUtils.isNotBlank(var))
+        {
+            selectionMode = URLActionDataValidation.VAR;
+            selectionValue = var;
         }
 
         if (text != null)
