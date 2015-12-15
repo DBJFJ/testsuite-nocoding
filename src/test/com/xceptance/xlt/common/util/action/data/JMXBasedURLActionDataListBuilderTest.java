@@ -15,6 +15,7 @@ import com.xceptance.xlt.common.util.action.data.JMXBasedURLActionDataListBuilde
 import com.xceptance.xlt.common.util.action.data.URLActionData;
 import com.xceptance.xlt.common.util.action.data.URLActionDataBuilder;
 import com.xceptance.xlt.common.util.action.data.URLActionDataStore;
+import com.xceptance.xlt.common.util.action.data.URLActionDataValidation;
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 
 /*
@@ -176,7 +177,57 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 */
 	@Test
 	public void testResponseAssertion() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath, interpreter, builder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
+		String[][][] assertionsExpected = {
+				
+				// for action 1
+				{}, 
+				
+				// for action 2
+				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"} },
+				
+				// for action 3
+				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"}, 
+					{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
+					
+				// for action 4
+					{},
+					
+				// for action 5
+					{ {"//*[@class=\"section-header\"]", "noHitsBanner"}, 
+						{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
+						
+				// for action 6
+						{}
+		};
+		
+		for (int iAction = 0; iAction < actions.size(); iAction++) {
+			URLActionData action = actions.get(iAction);
+			List<URLActionDataValidation> validations = action.getValidations();
+			int length = validations.size();
+			
+			for (int iValidation = 0; iValidation < length; iValidation++) {
+				URLActionDataValidation validation = validations.get(iValidation);
+				
+				String actualSelContent = validation.getSelectionContent();
+				String actualSelMode = validation.getSelectionMode();	
+				String actualValContent = validation.getValidationContent();
+				String actualValMode = validation.getValidationMode();		
+				
+				//DEBUG
+				System.out.println("asdfghjkl");
+				System.out.println(actualSelContent);
+				System.out.println(actualSelMode);
+				System.out.println(actualValContent);
+				System.out.println(actualValMode);
+					
+//				Assert.assertEquals(assertionsExpected[iAction][iValidation][0], actualValContent);
+//				Assert.assertEquals(assertionsExpected[iAction][iValidation][1], actualValMode);	
+
+			}
+		}
 	}
 	
 	/*
@@ -221,13 +272,9 @@ public class JMXBasedURLActionDataListBuilderTest {
 				
 				if (store.getSelectionMode() == URLActionDataStore.XPATH) {
 					String actualValue = store.getSelectionContent();
-					String actualName = store.getName();
-					
-					System.out.println("aaaaaaaa: " + iAction + ", " + iExtraction + ", " + actualValue + ", " + actualName);
-					
+					String actualName = store.getName();					
 					Assert.assertEquals(extractedExpected[iAction][iExtraction][0], actualValue);
 					Assert.assertEquals(extractedExpected[iAction][iExtraction][1], actualName);	
-					System.out.println("asdfgh: " + actualValue + ", " + actualName);
 				}
 			}
 		}

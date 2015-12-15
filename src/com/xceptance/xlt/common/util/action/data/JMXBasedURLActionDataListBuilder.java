@@ -17,6 +17,8 @@ import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
+import org.xml.sax.XMLReader;
+
 import bsh.EvalError;
 
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
@@ -40,10 +42,16 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/*
-	 * if the getAttributeValue(attributeName) method was used but the attribute wasn't found,
+	 * if the getAttributeValue(ATTRNNAME) method was used but the attribute wasn't found,
 	 * it will return this value instead
 	 */
-	private final String NOTFOUND = "Attribute not found";
+	private final String NOT_FOUND = "Attribute not found";
+	
+	/*
+	 * if the respnse code should be validated (instead of the response data
+	 * or the response header), the selectionMode is temporarily set to this
+	 */
+	private final String VALIDATE_RESP_CODE = "respCode";
 	
 	/*
 	 * <p>The following constant are used for the tagnames in Jmeter. 
@@ -54,19 +62,23 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * An "S" at the end signifies plural. Example: TNAMEVARS for tagNameVariables.
 	 */
 	
-	private final String TNAMEACTION = "HTTPSamplerProxy"; 
+	private final String TNAME_ACTION = "HTTPSamplerProxy"; 
 	
-	private final String TNAMEVARS = "Arguments";
+	private final String TNAME_VARS = "Arguments";
 	
-	private final String TNAMEVAR = "elementProp";
+	private final String TNAME_VAR = "elementProp";
 	
-	private final String TNAMEPARAMS = "collectionProp";
+	private final String TNAME_PARAMS = "collectionProp";
 	
-	private final String TNAMEPARAM = "elementProp";
+	private final String TNAME_PARAM = "elementProp";
 	
-	private final String TNAMERESPASSERT = "ResponseAssertion";
+	private final String TNAME_ASSERT_RESP = "ResponseAssertion";
 	
-	private final String TNAMEXPATHEXTRACT = "XPathExtractor";
+	private final String TNAME_ASSERT_ALL_CONTENT = "collectionProp";
+	
+	private final String TNAME_ASSERT_ONE_CONTENT = "stringProp";
+	
+	private final String TNAME_XPATH_EXTRACT = "XPathExtractor";
 
 	/*
 	 * Jmeter supports a tree structure, but the elements below a certain node
@@ -82,7 +94,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * In this example the inner 'hashtree' tag is for everything below the assertion, the 
 	 * outer 'hashtree' tag for everything below the action.
 	 */
-	private final String TNAMECONTENT = "hashTree";
+	private final String TNAME_CONTENT = "hashTree";
 	
 	/*
 	 * <p>The following constant are used for the attribute names in Jmeter. 
@@ -94,9 +106,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * An "S" at the end signifies plural. Example: ATTRNACTIONNAME for attributeNameActionName.
 	 */
 	
-	private final String ATTRNACTIONNAME = "testname";
+	private final String ATTRN_ACTION_NAME = "testname";
 	
-	private final String ATTRNELETYPE = "elementType";
+	private final String ATTRN_ASSERT_NAME = "testname";
+	
+	private final String ATTRN_ELE_TYPE = "elementType";
 	
 	/*
 	 * <p>the following is a name attribute used to identify what kind of element the tag
@@ -109,7 +123,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
      * <li> <stringProp name="HTTPSampler.protocol"></stringProp>
      * </ul>
 	 */
-	private final String ATTRNNAME = "name";
+	private final String ATTRN_NAME = "name";
 	
 	/*
 	 * <p>The following constant are used for the attribute values in Jmeter. 
@@ -121,29 +135,56 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * An "S" at the end signifies plural. Example: ATTRVACTIONURL for attributeValueActionUrl.
 	 */
 	
-	private final String ATTRVACTIONURL = "HTTPSampler.domain";
+	private final String ATTRV_ACTION_URL = "HTTPSampler.domain";
 	
-	private final String ATTRVACTIONMETHOD = "HTTPSampler.method";
+	private final String ATTRV_ACTION_METHOD = "HTTPSampler.method";
 	
-	private final String ATTRVACTIONPARAM = "Arguments.arguments";
+	private final String ATTRV_ACTION_PARAM = "Arguments.arguments";
 	
-	private final String ATTRVELEISVAR = "Argument";
+	private final String ATTRV_ELE_ISVAR = "Argument";
 	
-	private final String ATTRVELEISPARAM = "HTTPArgument";
+	private final String ATTRV_ELE_ISPARAM = "HTTPArgument";
 	
-	private final String ATTRVVARNAME = "Argument.name";
+	private final String ATTRV_VAR_NAME = "Argument.name";
 	
-	private final String ATTRVVARVALUE = "Argument.value";
+	private final String ATTRV_VAR_VALUE = "Argument.value";
 	
-	private final String ATTRVENCODEPARAM = "HTTPArgument.always_encode";
+	private final String ATTRV_ENCODE_PARAM = "HTTPArgument.always_encode";
 	
-	private final String ATTRVPARAMNAME = "Argument.name";
+	private final String ATTRV_PARAM_NAME = "Argument.name";
 	
-	private final String ATTRVPARAMVALUE = "Argument.value";
+	private final String ATTRV_PARAM_VALUE = "Argument.value";
 	
-	private final String ATTRVXPEXTREFNAME = "XPathExtractor.refname";
+	// Assertions ...
 	
-	private final String ATTRVXPEXTXPATH = "XPathExtractor.xpathQuery";
+	// if a variable should be validated it's name is inside this tag
+	private final String ATTRV_ASSERT_VARIABLE = "Scope.variable";
+	
+	private final String ATTRV_ASSERT_FIELD_TO_TEST = "Assertion.test_field";
+	
+	private final String ATTRV_ASSERT_VAL_MODE = "Assertion.test_type";
+	
+	//Extractors ...
+	
+	private final String ATTRV_XPATH_EXT_REFNAME = "XPathExtractor.refname";
+	
+	private final String ATTRV_XPATH_EXT_XPATH = "XPathExtractor.xpathQuery";
+	
+	
+	/*
+	 * The following constants are used when important values are in the character
+	 * parts of the xml. 
+	 * For example in <stringProp name="XPathExtractor.refname">noHitsBanner</stringProp>
+	 * 'noHisBanner' would be in the character part of the XML.
+	 * .
+	 * .
+	 * . TODO
+	 */
+	
+	private final String CHAR_ASSERT_RESP_HEADER = "Assertion.response_headers";
+	
+	private final String CHAR_ASSERT_RESP_CODE = "Assertion.response_code";
+	
 	
 	private List<URLActionData> actions = new ArrayList<URLActionData>();
 
@@ -187,17 +228,17 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 					switch (name) {
 					
-					case TNAMEACTION : {
+					case TNAME_ACTION : {
 						
 						// an TNAMEACTION is aquivalent to an HttpRequest
 						// is aquivalent to an action get and set the testname
-						String actionName = getAttributeValue(ATTRNACTIONNAME, se);
+						String actionName = getAttributeValue(ATTRN_ACTION_NAME, se);
 						URLActionData action = readAction(reader,
 								actionBuilder, actionName);
 						actions.add(action);
 						break;
 					}
-					case TNAMEVARS : {
+					case TNAME_VARS : {
 						
 						// read the variables and stores them
 						readVariables(actionBuilder, reader);
@@ -266,7 +307,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 				EndElement ee = event.asEndElement();
 				String name = getTagName(ee);
-				if (name.equals(TNAMEACTION)) {
+				if (name.equals(TNAME_ACTION)) {
 					break;
 				}
 			}
@@ -276,26 +317,26 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				StartElement se = event.asStartElement();
 
 				// and get the attribute for 'name'
-				String name = getAttributeValue(ATTRNNAME, se);
+				String name = getAttributeValue(ATTRN_NAME, se);
 
 				// if the name attribute corresponds to an action parameter,
 				// set the appropriate action parameter to the content
 				switch (name) {
-				case ATTRVACTIONURL: {
+				case ATTRV_ACTION_URL: {
 					// read the content
 					event = reader.nextEvent();
 					String content = event.asCharacters().getData();
 					actionBuilder.setUrl(content);
 					break;
 				}
-				case ATTRVACTIONMETHOD: {
+				case ATTRV_ACTION_METHOD: {
 					// read the content
 					event = reader.nextEvent();
 					String content = event.asCharacters().getData();
 					actionBuilder.setMethod(content);
 					break;
 				}
-				case ATTRVACTIONPARAM: {
+				case ATTRV_ACTION_PARAM: {
 					// read the parameters					
 					readParameters(actionBuilder, reader);
 					break;
@@ -367,18 +408,18 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				String tagName = getTagName(se);
 				
 				switch (tagName) {
-				case TNAMECONTENT: {
+				case TNAME_CONTENT: {
 				
 					// we just went a bit further down in the tree
 					treeLevel++;
 					break;
 				}
-				case TNAMERESPASSERT: {
+				case TNAME_ASSERT_RESP: {
 					
-					// read the Response Assertion
-					validationBuilder.setInterpreter(interpreter);
-					URLActionDataValidation validation = readResponseAssertion(validationBuilder, 
-							reader);
+					// check Response Assertion .
+					String name = getAttributeValue(ATTRN_ASSERT_NAME, se);
+					URLActionDataValidation validation = readResponseAssertion(name,
+						 reader);
 					if (validation != null) {
 						validations.add(validation);
 					}
@@ -386,11 +427,13 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					break;
 				}
 				
-				case TNAMEXPATHEXTRACT: {
+				case TNAME_XPATH_EXTRACT: {
 					
 					// read the XPathExtractor
+					String selectionMode = URLActionDataStore.XPATH;
 					storeBuilder.setInterpreter(interpreter);
-					URLActionDataStore variableToExtract = readXPathExtractor(reader, storeBuilder);
+					URLActionDataStore variableToExtract = readExtractor(selectionMode, 
+							reader, storeBuilder);
 					if (variableToExtract != null) {
 						variablesToExtract.add(variableToExtract);
 					}
@@ -431,7 +474,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 				EndElement ee = event.asEndElement();
 				String name = getTagName(ee);
-				if (name.equals(TNAMEVARS)) {
+				if (name.equals(TNAME_VARS)) {
 					break;
 				}
 			}
@@ -441,15 +484,15 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				StartElement se = event.asStartElement();
 
 				// and has an 'elementType' attribute
-				String elementType = getAttributeValue(ATTRNELETYPE, se);
+				String elementType = getAttributeValue(ATTRN_ELE_TYPE, se);
 
 				// and get the elements tag name
 				String name = getTagName(se);
 
 				// if they both fit and it looks like a single argument,
 				// call the readArgument method to let it read it
-				if (name.equals(TNAMEVAR)
-						&& elementType.equals(ATTRVELEISVAR)) {
+				if (name.equals(TNAME_VAR)
+						&& elementType.equals(ATTRV_ELE_ISVAR)) {
 					readVariable(reader);
 				}
 			}
@@ -473,7 +516,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 			EndElement ee = event.asEndElement();
 			String name = getTagName(ee);
-			if (name.equals(TNAMEVAR)) {
+			if (name.equals(TNAME_VAR)) {
 				break;
 				}
 			}
@@ -484,17 +527,17 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				StartElement se = event.asStartElement();
 
 				// if the attribute for 'name' exists
-				String name = getAttributeValue(ATTRNNAME, se);
+				String name = getAttributeValue(ATTRN_NAME, se);
 
 				// and it is the right String, get the content of the tag
 				// and save it as name or value, depending
 				switch (name) {
-				case ATTRVVARNAME: {
+				case ATTRV_VAR_NAME: {
 					event = reader.nextEvent();
 					argsName = getTagContent(event);
 					break;
 				}
-				case ATTRVVARVALUE: {
+				case ATTRV_VAR_VALUE: {
 					event = reader.nextEvent();
 					argsValue =  getTagContent(event);
 					break;
@@ -531,7 +574,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 			EndElement ee = event.asEndElement();
 			String name = getTagName(ee);
-			if (name.equals(TNAMEPARAMS)) {
+			if (name.equals(TNAME_PARAMS)) {
 				break;
 				}
 			}
@@ -542,11 +585,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 				// and it's tag name is ATTRNELETYPE
 				String name = getTagName(se);
-				if (name.equals(TNAMEPARAM)) {
+				if (name.equals(TNAME_PARAM)) {
 
 					// if the elementType attribute is 'HTTPArgument'
-					String elementType = getAttributeValue(ATTRNELETYPE, se);
-					if (elementType.equals(ATTRVELEISPARAM)) {
+					String elementType = getAttributeValue(ATTRN_ELE_TYPE, se);
+					if (elementType.equals(ATTRV_ELE_ISPARAM)) {
 
 						// read the single detected parameter
 						parameters = readParameter(actionBuilder, reader, parameters);
@@ -581,7 +624,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 				EndElement ee = event.asEndElement();
 				String name = getTagName(ee);
-				if (name.equals(TNAMEPARAM)) {
+				if (name.equals(TNAME_PARAM)) {
 					break;
 				}
 			}
@@ -591,17 +634,17 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 				StartElement se = event.asStartElement();
 
-				String name = getAttributeValue(ATTRNNAME, se);
+				String name = getAttributeValue(ATTRN_NAME, se);
 
 				// if the name attribute is the right String, get the content of the tag
-				// and set something, depending on the attributeName value
+				// and set something, depending on the ATTRNNAME value
 				switch (name) {
-				case ATTRVENCODEPARAM: {
+				case ATTRV_ENCODE_PARAM: {
 					event = reader.nextEvent();
 					encoded = getTagContent(event);
 					break;
 				}
-				case ATTRVPARAMVALUE: {
+				case ATTRV_PARAM_VALUE: {
 					event = reader.nextEvent();
 					parameterValue = getTagContent(event);
 					break;
@@ -614,7 +657,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// there doesn't seem to be an equivalent in TSNC
 					break;
 				}
-				case ATTRVPARAMNAME: {
+				case ATTRV_PARAM_NAME: {
 					event = reader.nextEvent();
 					parameterName = getTagContent(event);
 					break;
@@ -634,21 +677,228 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		return parameters;
 	}
 	
-	private URLActionDataValidation readResponseAssertion(
-			URLActionDataValidationBuilder validationbuilder, XMLEventReader reader) {
+	private URLActionDataValidation readResponseAssertion(String name, XMLEventReader reader) throws XMLStreamException {
+
+		// variable check if the Response Code, the Response Headers or the Response Data
+		// should be validated
+		String selectionMode = null;
+		String selectionContent = null;
+		String validationMode = null;
+		List<String> allValidationContent = new ArrayList<String>();
+		
+		// loop until the loop is closed with an EndElement with the tag name TNAME_ASSERT_RESP
+		// all parameters should be inside a single TNAME_ASSERT_RESP tag
+		while (true) {			
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
+				String tagName = getTagName(ee);
+				if (tagName.equals(TNAME_ASSERT_RESP)) {
+					break;
+				}
+			}
+			
+			// look for StartElements
+			if (event.isStartElement()) {
+
+				StartElement se = event.asStartElement();
+				String tagName = getTagName(se);
+				
+				if (tagName.equals(TNAME_ASSERT_ALL_CONTENT)) {
+					
+					// inside the TNAME_ASSERT_ALL_CONTENT are all the values that
+					// should be validated. Read them
+					allValidationContent = readallValidationContent(reader);
+				}
+				
+				String attrName = getAttributeValue(ATTRN_NAME, se);
+				switch (attrName) {
+				case ATTRV_ASSERT_VARIABLE:
+					
+					// shows that a variable should be validated
+					// and which variable to validate
+					selectionMode = URLActionDataValidation.VAR;
+					event = reader.nextEvent();
+					selectionContent = getTagContent(event);
+					break;
+					
+				case ATTRV_ASSERT_FIELD_TO_TEST:
+					
+					// can determine the selectionMode 
+					// if it's the code or header. The mapping can be awkward here
+					event = reader.nextEvent();
+					String selectionModeInJmt = getTagContent(event);
+					selectionMode = getSelectionModeFromJmt(selectionModeInJmt, selectionMode);
+					break;
+					
+				case ATTRV_ASSERT_VAL_MODE:
+					
+					// determines the validationMode
+					event = reader.nextEvent();
+					int valModeInInt = Integer.parseInt(getTagContent(event));
+					validationMode = getValidationModeFromInt(valModeInInt);
+					break;
+
+				default:
+					break;
+				}
+			}
+		}
+	
+		createValidations(name, selectionMode, selectionContent, validationMode, 
+				allValidationContent, actionBuilder);
 		
 		return null; 
 	}
 	
 	/*
+	 * Builds the validations from the given inputs and adds them to the action
+	 */
+	private void createValidations(String name,
+			String selectionMode, String selectionContent,
+			String validationMode,
+			List<String> allValidationContent, URLActionDataBuilder actionBuilder) {
+		
+		// for all the cases that coudn't be mapped
+		if (selectionMode == null) {
+			selectionMode = URLActionDataValidation.REGEXP;
+		}
+		if (selectionContent == null) {
+			// this _should_ be everything
+			selectionContent = "*";
+		}
+		
+		// if the response code should be validated
+		if (selectionMode.equals(VALIDATE_RESP_CODE)) {
+			String httpResponseCode = allValidationContent.get(0);
+			actionBuilder.setHttpResponceCode(httpResponseCode);
+		}
+		else {
+			for (String validationContent : allValidationContent) {
+				URLActionDataValidation validation = new URLActionDataValidation(name,
+						selectionMode, selectionContent, validationMode, 
+						validationContent, interpreter);
+				actionBuilder.addValidation(validation);
+			}
+		}
+	}
+
+	/*
+	 * Maps the value from Jmeters Pattern Matching Rules to TSNCs validationMode.
+	 * Since a large part of them don't match it defaults to RegEx.
+	 * 
+	 */
+	private String getSelectionModeFromJmt(String selectionContentInJmt, String selectionMode) {
+		
+		// if the selectionMode isn't set already
+		if (selectionMode == null)	{	
+			switch (selectionContentInJmt) {
+			
+			// and if a response code or a header should be validated
+			// set the selectionMode
+			case CHAR_ASSERT_RESP_CODE:
+				selectionMode = VALIDATE_RESP_CODE;
+				break;
+			
+			case CHAR_ASSERT_RESP_HEADER:
+				selectionMode = URLActionDataValidation.HEADER;
+				break;
+
+			default:
+				break;
+			}
+		}
+		
+		return selectionMode;
+	}
+
+	/*
+	 * Maps the value from Jmeters Pattern Matching Rules to TSNCs validationMode
+	 */
+	private String getValidationModeFromInt(int valModeInInt) {
+		
+		String validationMode = null;
+		
+		switch (valModeInInt) {
+		case 1:
+			// Jmeter: Matches
+			validationMode = URLActionDataValidation.MATCHES;
+			break;
+		
+		case 2:
+			// Jmeter: Equal
+			validationMode = URLActionDataValidation.MATCHES;
+			break;
+
+		case 8:
+			// Jmeter: Substring
+			validationMode = URLActionDataValidation.TEXT;
+			break;
+			
+		case 16:
+			// Jmeter: Substring
+			validationMode = URLActionDataValidation.MATCHES;
+			break;
+			
+		default:
+			//TODO log warning - validation mode not detected
+			// set the validationMode to EXISTS so it has at least something
+			validationMode = URLActionDataValidation.EXISTS;
+			break;
+		}
+		return validationMode;
+	}
+
+	/*
+	 * Called in the readResponseAssertion method. 
+	 * Reads until the end of an TNAME_ASSERT_CONTENT tag and returns a list
+	 * of the values that should be validated
+	 */
+	private List<String> readallValidationContent(XMLEventReader reader) throws XMLStreamException {
+		
+		List<String> allValidationContent = new ArrayList<>();
+		
+		while (true) {
+			XMLEvent event = reader.nextEvent();
+			
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
+				String tagName = getTagName(ee);
+				if (tagName.equals(TNAME_ASSERT_ALL_CONTENT)) {
+					break;
+				}
+			}
+			
+			// look for StartElements
+			if (event.isStartElement()) {
+
+				StartElement se = event.asStartElement();
+				String tagName = getTagName(se);
+
+				// if the tag name is equal to ...
+				if (tagName.equals(TNAME_ASSERT_ONE_CONTENT)) {
+					
+					// one content was found. Read it and 
+					// put it on the list
+					event = reader.nextEvent();
+					String content = getTagContent(event);
+					allValidationContent.add(content);
+				}
+			}
+		}
+		
+		return allValidationContent;
+	}
+
+	/*
 	 * Should be called when the readActionContent method comes upon a TNAMEXPATHEXTRACT tag.
 	 * Reads until the end of the TNAMEXPATHEXTRACT tag and returns an URLActionDataStore object.
 	 */
-	private URLActionDataStore readXPathExtractor(XMLEventReader reader, 
-			URLActionDataStoreBuilder storeBuilder) throws XMLStreamException {
+	private URLActionDataStore readExtractor(String selectionMode, 
+			XMLEventReader reader, URLActionDataStoreBuilder storeBuilder) throws XMLStreamException {
 				
 		String name = null;
-		String selectionMode = URLActionDataStore.XPATH;
 		String selectionContent = null;
 		
 		// loop until the loop is closed with an EndElement with the tag name TNAMEXPATHEXTRACT
@@ -659,7 +909,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 				EndElement ee = event.asEndElement();
 				String tagName = getTagName(ee);
-				if (tagName.equals(TNAMEXPATHEXTRACT)) {
+				if (tagName.equals(TNAME_XPATH_EXTRACT)) {
 					break;
 				}
 			}
@@ -669,21 +919,23 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 				StartElement se = event.asStartElement();
 
-				String attrName = getAttributeValue(ATTRNNAME, se);
+				String attrName = getAttributeValue(ATTRN_NAME, se);
 
 				// if the name attribute is the right String, get the content of the tag
-				// and set something, depending on the attributeName value
+				// and set something, depending on the ATTRNNAME value
 				switch (attrName) {
+				
+				// for the XPath ...
 				case "XPathExtractor.default": {
 					// there doesn't seem to be an equivalent in TSNC
 					break;
 				}
-				case ATTRVXPEXTREFNAME: {
+				case ATTRV_XPATH_EXT_REFNAME: {
 					event = reader.nextEvent();
 					name = getTagContent(event);
 					break;
 				}
-				case ATTRVXPEXTXPATH: {
+				case ATTRV_XPATH_EXT_XPATH: {
 					event = reader.nextEvent();
 					selectionContent = getTagContent(event);
 					break;
@@ -704,8 +956,13 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// there doesn't seem to be an equivalent in TSNC
 					break;
 				}
+				
 				// "Sample.scope", "XPathExtractor.show_warnings" and "XPathExtractor.report_errors"
 				// presumably don't have aquivalents either
+				// ... no longer for the XPath
+				
+				//TODO just add the other extractors in here?
+				
 				default: {
 					break;
 				}
@@ -739,7 +996,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 	
 	/*
-	 * <p>Gets the attributeValue from a StartElement and an attributeName. </p>
+	 * <p>Gets the attributeValue from a StartElement and an ATTRNNAME. </p>
 	 * <p>Returns the value of the NOTFOUND constant if no attribute with that name exists.</p> 
 	 */
 	private String getAttributeValue(String attributeName, StartElement se) {
@@ -747,7 +1004,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		String attributeValue = null;
 		QName qname = new QName(attributeName); 
 		if (se.getAttributeByName(qname) == null) {
-			attributeValue = NOTFOUND;
+			attributeValue = NOT_FOUND;
 		}
 		else {
 			Attribute attribute = se.getAttributeByName(qname);
