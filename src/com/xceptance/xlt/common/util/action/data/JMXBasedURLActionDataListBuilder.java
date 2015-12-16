@@ -17,8 +17,6 @@ import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
-import org.xml.sax.XMLReader;
-
 import bsh.EvalError;
 
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
@@ -416,14 +414,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				}
 				case TNAME_ASSERT_RESP: {
 					
-					// check Response Assertion .
+					// check Response Assertion, add it to the actionBuilder
 					String name = getAttributeValue(ATTRN_ASSERT_NAME, se);
-					URLActionDataValidation validation = readResponseAssertion(name,
-						 reader);
-					if (validation != null) {
-						validations.add(validation);
-					}
-					validationBuilder.reset();
+					readResponseAssertion(name, reader, actionBuilder);
 					break;
 				}
 				
@@ -677,7 +670,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		return parameters;
 	}
 	
-	private URLActionDataValidation readResponseAssertion(String name, XMLEventReader reader) throws XMLStreamException {
+	private URLActionDataValidation readResponseAssertion(String name, 
+			XMLEventReader reader, URLActionDataBuilder actionBuilder) throws XMLStreamException {
 
 		// variable check if the Response Code, the Response Headers or the Response Data
 		// should be validated
@@ -721,6 +715,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					selectionMode = URLActionDataValidation.VAR;
 					event = reader.nextEvent();
 					selectionContent = getTagContent(event);
+					selectionContent = "${" + selectionContent + "}";
 					break;
 					
 				case ATTRV_ASSERT_FIELD_TO_TEST:
@@ -763,10 +758,10 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		// for all the cases that coudn't be mapped
 		if (selectionMode == null) {
 			selectionMode = URLActionDataValidation.REGEXP;
-		}
+		}		
 		if (selectionContent == null) {
 			// this _should_ be everything
-			selectionContent = "*";
+			selectionContent = ".*";
 		}
 		
 		// if the response code should be validated
@@ -776,6 +771,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		}
 		else {
 			for (String validationContent : allValidationContent) {
+				
+				// if the selectionMode is 'matches', make it so it means
+				// 'contains a pattern which matches', not matches as a whole
+				if (validationMode == URLActionDataValidation.MATCHES && 
+						selectionMode != URLActionDataValidation.VAR) {
+					validationContent = ".*" + validationContent + ".*";					
+				}
+				
 				URLActionDataValidation validation = new URLActionDataValidation(name,
 						selectionMode, selectionContent, validationMode, 
 						validationContent, interpreter);
@@ -827,18 +830,18 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			break;
 		
 		case 2:
-			// Jmeter: Equal
-			validationMode = URLActionDataValidation.MATCHES;
+			// Jmeter: Contains
+			validationMode = URLActionDataValidation.EXISTS;
 			break;
 
 		case 8:
-			// Jmeter: Substring
+			// Jmeter: Equal
 			validationMode = URLActionDataValidation.TEXT;
 			break;
 			
 		case 16:
 			// Jmeter: Substring
-			validationMode = URLActionDataValidation.MATCHES;
+			validationMode = URLActionDataValidation.EXISTS;
 			break;
 			
 		default:
