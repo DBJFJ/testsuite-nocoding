@@ -71,7 +71,7 @@ public class URLActionDataValidationResponseHandlerTest
                 									   URLActionDataValidation.VAR,
                 									   varString,
                 									   URLActionDataValidation.EXISTS,
-                									   varString,
+                									   null,
                 									   interpreter);
 		
         validationExists = new URLActionDataValidation("exists",
