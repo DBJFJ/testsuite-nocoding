@@ -22,20 +22,58 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  * Tests the JMXBasedURLActionDataListBuilder. Tests:
  * 
  * <ul>
- * <li>tests output for an unexisting file TODO 
- * <li>tests output for an empty file	TODO
- * <li>test output for default values	TODO
- * <li>tests with an example test case
+ * <li>tests output for an unexisting file 
+ * <li>tests output for an empty file	
+ * <li>tests with example test case:
+ * <li>tests if variables are stored correctly
+ * <li>tests if actions (Http Requests) are executed correctly
+ * <li>tests if XPath extractions work
+ * <li>and if ResponseAssertions work TODO
  * </u>
  */
 public class JMXBasedURLActionDataListBuilderTest {
 
-	private final String filePath = "/home/daniel/Desktop/TSearchDidYouMean.jmx";
+	private final String path = "./config/data/test/";
+	private final String filePath1 = "/home/daniel/Desktop/TSearchDidYouMean.jmx";
+	private final String filePath2 = "/home/daniel/Desktop/HTTP Request.jmx";
+	private final String stringNotExistingFile = "notExistingFile";
+    private final String fileEmptyFile = path + "emptyFile.yml";
+	
 	private XltProperties properties = XltProperties.getInstance();
 	private GeneralDataProvider dataProvider = GeneralDataProvider.getInstance();
+	
     private ParameterInterpreter interpreter = new ParameterInterpreter(properties, dataProvider);
-	private final URLActionDataBuilder builder = new URLActionDataBuilder();
+	private final URLActionDataBuilder actionBuilder = new URLActionDataBuilder();
 
+    @Test
+    public void testCorrectConstructor()
+    {
+
+    	
+        @SuppressWarnings("unused")
+		final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
+				filePath1, this.interpreter, actionBuilder);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testOutputForUnExistingFile()
+    {
+        final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
+        		this.stringNotExistingFile, this.interpreter, this.actionBuilder);
+        
+        final List<URLActionData> actions = listBuilder.buildURLActionDataList();
+        Assert.assertTrue(actions.isEmpty());
+    }
+    
+    @Test(expected = IllegalArgumentException.class) //TODO really correct?
+    public void testOutputForEmptyFile()
+    {
+        final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
+        		this.fileEmptyFile, this.interpreter, this.actionBuilder);
+        final List<URLActionData> actions = listBuilder.buildURLActionDataList();
+        Assert.assertTrue(actions.isEmpty());
+    }
+	
 	/*
 	 * tests a known file.
 	 * tests if the number of actions is correct.
@@ -46,17 +84,12 @@ public class JMXBasedURLActionDataListBuilderTest {
 	@Test
 	public void testActions() {
 	
-		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath, interpreter, builder);
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
+				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		// check the number of actions 
 		int numberOfActions = actions.size();
-		
-		// DEBUG
-//		for (int i = 0; i < actions.size(); i++) {
-//			System.out.println("NAME: " + actions.get(i).getName());
-//		}
-		
 		Assert.assertEquals(6, numberOfActions);
 		
 		// check if the names of the actions are as expected
@@ -139,6 +172,70 @@ public class JMXBasedURLActionDataListBuilderTest {
 	}
 	
 	/*
+	 * Tests if the HeaderManager is read correctly and the custom headers are set correctly.
+	 * Doesn't test default headers, since default headers are not yet implemented.
+	 */
+	@Test
+	public void testHeaders() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(
+				filePath1, interpreter, actionBuilder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
+		
+		String[][] headerExpected = {
+				{"User-Agent", "Mozilla/4.0 (X11; Ubuntu; Linux x86_64; rv:43.0) " +
+						"Gecko/20100101 Firefox/43.0" },
+				{ "Referer", "https://www.google.de"}
+				
+		};
+		
+		// check the first header
+		URLActionData action = actions.get(0);
+		NameValuePair header = action.getHeaders().get(0);
+		Assert.assertEquals(header.getName(), headerExpected[0][0]);
+		Assert.assertEquals(header.getValue(), headerExpected[0][1]);
+		
+		// check the second header
+		action = actions.get(0);
+		header = action.getHeaders().get(1);
+		Assert.assertEquals(header.getName(), headerExpected[1][0]);
+		Assert.assertEquals(header.getValue(), headerExpected[1][1]);
+		
+		// check the default header
+		String[] defaultHeader = {"Referer", "yahoo.com"};
+		for (int i = 1; i < actions.size(); i++) {
+			action = actions.get(1);
+			header = action.getHeaders().get(0);
+			
+			Assert.assertEquals(header.getName(), defaultHeader[0]);
+			Assert.assertEquals(header.getValue(), defaultHeader[1]);
+		}
+	}
+	
+	/*
+	 * Checks if the protocol is read correctly. Uses file2.
+	 */
+	@Test
+	public void testProtocol() {
+	
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(
+				filePath2, interpreter, actionBuilder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
+		
+		String[] urlExpected = {
+				"http://www.xceptance.net",
+				"https://www.xceptance.net",
+				"https://www.xceptance.net",
+				"http://blazemeter.com"
+		};
+		
+		for (int i = 0; i < actions.size(); i++) {
+			URLActionData action = actions.get(i);
+			String realUrl = action.getUrlString();
+			Assert.assertEquals(urlExpected[i], realUrl);
+		}
+	}
+	
+	/*
 	 * Checks if the variables were stored and used correctly. <br/>
 	 * Tests with a known test case. <br/>
 	 * Only tests the first action since all variables are stored at the start in this test case <br/>
@@ -146,7 +243,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 */
 	@Test
 	public void testVariables() throws EvalError {
-		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath, interpreter, builder);
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
+				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		URLActionData action = actions.get(0);
 		Interpreter interpreter = action.getInterpreter();
@@ -154,7 +252,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		
 		// checks if the parameters of the actions are as expected
 		String[][] parametersExpected = {
-				{"host", "http://production-stage02-dw.demandware.net/s/SiteGenesis"},
+				{"host", "production-stage02-dw.demandware.net/s/SiteGenesis"},
 				{"searchPhrase1", "iuzauz"},				
 				{"searchPhrase2", "blut"},			
 				{"suggestionPhrase2", "blue"},
@@ -172,35 +270,22 @@ public class JMXBasedURLActionDataListBuilderTest {
 	
 	/*
 	 * Checks if the ResponseAssertions were read correctly. <br/>
-	 * Tests with a known test case. <br/>
-	 * TODO
+	 * The mapping is difficult here, so the the test case just checks that 
+	 * the values are syntactically correct for now.
 	 */
 	@Test
 	public void testResponseAssertion() {
-		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath, interpreter, builder);
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
+				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
-		String[][][] assertionsExpected = {
-				
-				// for action 1
-				{}, 
-				
-				// for action 2
-				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"} },
-				
-				// for action 3
-				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"}, 
-					{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
-					
-				// for action 4
-					{},
-					
-				// for action 5
-					{ {"//*[@class=\"section-header\"]", "noHitsBanner"}, 
-						{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
-						
-				// for action 6
-						{}
+		String[][] selectionModeExpected = {
+				{"Regex", "Regex"},
+				{"Regex", "Var"},
+				{"Regex", "Var", "Var"},
+				{"Regex", "Regex", "Regex"},
+				{"Regex", "Var", "Var"},
+				{"Regex", "Regex", "Regex"}
 		};
 		
 		for (int iAction = 0; iAction < actions.size(); iAction++) {
@@ -210,22 +295,26 @@ public class JMXBasedURLActionDataListBuilderTest {
 			
 			for (int iValidation = 0; iValidation < length; iValidation++) {
 				URLActionDataValidation validation = validations.get(iValidation);
-				
-				String actualSelContent = validation.getSelectionContent();
-				String actualSelMode = validation.getSelectionMode();	
-				String actualValContent = validation.getValidationContent();
-				String actualValMode = validation.getValidationMode();		
-				
-				//DEBUG
-				System.out.println("asdfghjkl");
-				System.out.println(actualSelContent);
-				System.out.println(actualSelMode);
-				System.out.println(actualValContent);
-				System.out.println(actualValMode);
-					
-//				Assert.assertEquals(assertionsExpected[iAction][iValidation][0], actualValContent);
-//				Assert.assertEquals(assertionsExpected[iAction][iValidation][1], actualValMode);	
 
+				String selectionMode = validation.getSelectionMode();	
+				Assert.assertEquals(selectionModeExpected[iAction][iValidation], selectionMode);
+				
+				//TODO the rest
+				String selectionContent = validation.getSelectionContent();
+				String validationMode = validation.getValidationMode();	
+				String validationContent = validation.getValidationContent();
+				boolean result = true;
+
+				
+				// TODO test selectionMode and validationMode and validationContent 
+				// and HTTPResponseCode
+								
+				// testing whether the selection Content has any unexpected values
+				// it should contain variables (${variable} or everything ".*"
+				if ( !(selectionContent.contains("${") || selectionContent.equals(".*")) ) {
+					result = false;
+				}
+				Assert.assertTrue(result);
 			}
 		}
 	}
@@ -235,8 +324,9 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 * Tests with a known test case. <br/>
 	 */
 	@Test
-	public void testXPathExtraction() {
-		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath, interpreter, builder);
+	public void testExtractions() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
+				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		String[][][] extractedExpected = {
@@ -249,6 +339,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 				
 				// for action 3
 				{ {"//*[@class=\"section-header\"]/p", "noHitsBanner"}, 
+
 					{"//*[@class=\"no-hits-search-term-suggest\"]", "suggestedSearchTerm"} },
 					
 				// for action 4
@@ -270,12 +361,10 @@ public class JMXBasedURLActionDataListBuilderTest {
 			for (int iExtraction = 0; iExtraction < length; iExtraction++) {
 				URLActionDataStore store = extracted.get(iExtraction);
 				
-				if (store.getSelectionMode() == URLActionDataStore.XPATH) {
-					String actualValue = store.getSelectionContent();
-					String actualName = store.getName();					
-					Assert.assertEquals(extractedExpected[iAction][iExtraction][0], actualValue);
-					Assert.assertEquals(extractedExpected[iAction][iExtraction][1], actualName);	
-				}
+				String actualValue = store.getSelectionContent();
+				String actualName = store.getName();					
+				Assert.assertEquals(extractedExpected[iAction][iExtraction][0], actualValue);
+				Assert.assertEquals(extractedExpected[iAction][iExtraction][1], actualName);	
 			}
 		}
 	}
