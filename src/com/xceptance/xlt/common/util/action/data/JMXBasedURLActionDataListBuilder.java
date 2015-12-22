@@ -200,6 +200,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	
 	private final String CHAR_ASSERT_RESP_HEADER = "Assertion.response_headers";
 	
+	private final String CHAR_ASSERT_RESP_MESSAGE = "Assertion.response_message";
+	
 	private final String CHAR_ASSERT_RESP_CODE = "Assertion.response_code";
 	
 	// now finally all the xml constants used in this class are defined ...
@@ -244,42 +246,44 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 */
 	@Override
 	public List<URLActionData> buildURLActionDataList() {
-
-			try {
-				InputStream inputstream = new FileInputStream(filePath);
-				XMLInputFactory factory = XMLInputFactory.newInstance();
-				factory.setProperty(XMLInputFactory.IS_COALESCING, true);
-				XMLEventReader reader = factory.createXMLEventReader(inputstream);
+		
+		XltLogger.runTimeLogger.debug("Starting Jmeter -> TSNC translation ...");
+		
+		try {
+			InputStream inputstream = new FileInputStream(filePath);
+			XMLInputFactory factory = XMLInputFactory.newInstance();
+			factory.setProperty(XMLInputFactory.IS_COALESCING, true);
+			XMLEventReader reader = factory.createXMLEventReader(inputstream);
+		
+			// start reading and keep reading until the end
+			while (reader.hasNext()) {
 			
-				// start reading and keep reading until the end
-				while (reader.hasNext()) {
-				
-				// look for the next startElement
-					XMLEvent event = reader.nextEvent();			
-					if (event.isStartElement()) {
+			// look for the next startElement
+				XMLEvent event = reader.nextEvent();			
+				if (event.isStartElement()) {
 
-						StartElement se = event.asStartElement();
-						String tagName = getTagName(se);
+					StartElement se = event.asStartElement();
+					String tagName = getTagName(se);
 					
-						if (tagName.equals(TNAME_THREAD_GROUP)) {
-							readThreadGroup(reader);
-							break;
-						}
+					if (tagName.equals(TNAME_THREAD_GROUP)) {
+						readThreadGroup(reader);
+						break;
 					}
 				}
-			}        
-			catch (final FileNotFoundException e)
-	        {
-	            final String message = MessageFormat.format("File: \"{0}\" not found!",
-	                                                        this.filePath);
-	            XltLogger.runTimeLogger.warn(message);
-	            throw new IllegalArgumentException(message + ": " + e.getMessage());
-	        }
-			catch (XMLStreamException e) {
-	            XltLogger.runTimeLogger.error("Jmeters XML Stream was interrupted");
-	            throw new IllegalArgumentException(e.getMessage());
 			}
-			return actions;
+		}        
+		catch (final FileNotFoundException e)  {
+	    
+			final String message = MessageFormat.format("File: \"{0}\" not found!",
+	                                                       this.filePath);
+	        XltLogger.runTimeLogger.warn(message);
+	        throw new IllegalArgumentException(message + ": " + e.getMessage());
+	    }
+		catch (XMLStreamException e) {
+	        XltLogger.runTimeLogger.error("Jmeters XML Stream was interrupted");
+	        throw new IllegalArgumentException(e.getMessage());
+		}
+		return actions;
 	}
 	
 	/**
@@ -929,7 +933,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 //					}
 //					storeBuilder.reset();
 					
-					XltLogger.runTimeLogger.warn("Coudn't translate RegEx Extraction");
+					XltLogger.runTimeLogger.warn("Coudn't translate RegEx Extraction from Jmeter to TSNC");
 					break;
 				}
 				case TNAME_HEADERS: {
@@ -1016,8 +1020,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					
 				case ATTRV_ASSERT_FIELD_TO_TEST:
 					
-					// can determine the selectionMode 
-					// if it's the code or header. The mapping can be awkward here
+					// determines the selectionMode unless it's VAR (from a variable)
 					event = reader.nextEvent();
 					String selectionModeInJmt = getTagContent(event);
 					selectionMode = getSelectionModeFromJmt(selectionModeInJmt, selectionMode);
@@ -1037,8 +1040,17 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			}
 		}
 	
-		createValidations(name, selectionMode, selectionContent, validationMode, 
-				allValidationContent, actionBuilder);
+		if (selectionMode != null && validationMode != null) {
+			createValidations(name, selectionMode, selectionContent, validationMode, 
+					allValidationContent, actionBuilder);
+		}
+		else {
+			// Don't create the validations since the mapping 
+			// was quite likely wrong impossible
+			
+			XltLogger.runTimeLogger.warn("Mapping Jmeter -> TSNC coudn't be finished correctly");
+			XltLogger.runTimeLogger.warn("Validation " + name + "will not be created");
+		}
 	}
 	
 	/**
@@ -1065,10 +1077,20 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			
 			case CHAR_ASSERT_RESP_HEADER:
 				// this can't be mapped easily
-				XltLogger.runTimeLogger.warn("Coudn't translate assertion: " + 
+				XltLogger.runTimeLogger.warn("Coudn't translate assertion from Jmeter to TSNC: " + 
 											"Headers can't be asserted");
-
+				break;	
+				
+			case CHAR_ASSERT_RESP_MESSAGE:
+				// this can't be mapped easily
+				XltLogger.runTimeLogger.warn("Coudn't translate assertion from Jmeter to TSNC: " + 
+											"Response Messages can't be asserted");
+				break;
+				
 			default:
+				
+				// set it to RegExp as the default
+				selectionMode = URLActionDataValidation.REGEXP;
 				break;
 			}
 		}
@@ -1097,7 +1119,12 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			// Jmeter: Contains
 			validationMode = URLActionDataValidation.EXISTS;
 			break;
-
+			
+		case 6:
+			// Jmeter: Not
+			validationMode = URLActionDataValidation.EXISTS;
+			break;	
+			
 		case 8:
 			// Jmeter: Equal
 			validationMode = URLActionDataValidation.TEXT;
@@ -1109,10 +1136,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			break;
 			
 		default:
-	        XltLogger.runTimeLogger.warn("Coudn't detect Jmeter validation mode");
-	        
-			// set the validationMode to EXISTS so it at least something is validated
-			validationMode = URLActionDataValidation.EXISTS;
+	        XltLogger.runTimeLogger.warn("Coudn't detect validation mode in Jmeter");
 			break;
 		}
 		return validationMode;
@@ -1186,17 +1210,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			String selectionMode, String selectionContent,
 			String validationMode,
 			List<String> allValidationContent, URLActionDataBuilder actionBuilder) {
-		
-		// for all the cases that coudn't be mapped
-		if (selectionMode == null) {
-			selectionMode = URLActionDataValidation.REGEXP;
-		}		
+
 		if (selectionContent == null) {
 			// this _should_ be everything
 			selectionContent = ".*";
 		}
 		
 		// if the response code should be validated
+		System.out.println(name);
 		if (selectionMode.equals(VALIDATE_RESP_CODE)) {
 			String httpResponseCode = allValidationContent.get(0);
 			actionBuilder.setHttpResponceCode(httpResponseCode);

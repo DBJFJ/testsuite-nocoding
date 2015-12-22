@@ -77,8 +77,8 @@ The mapping for Response Assertions from Jmeter to TSNC is as such:
 * * URL Sampled can't be mapped yet
 * * Response Code -> Http Response Code (not a validation object. There can only be one response code per action but something else woudn't make sense anyway.)	
 * * Response Message can't be mapped
-* * Response Headers -> can't be mapped  
-* * Ignore Status -> can't be mapped 
+* * Response Headers -> can't be mapped, validations won't be created  
+* * Ignore Status -> can't be mapped, validations won't be created 
 
 The selectionContent from TSNC is always mapped to '.*' unless a variable should be asserted. In that case is is mapped to ${variablename}.
 
@@ -87,7 +87,7 @@ The selectionContent from TSNC is always mapped to '.*' unless a variable should
 * * Matches -> Matches
 * * Equals -> Text
 * * Substring -> Exists
-* * Not can't be mapped
+* * Not can't be mapped, validations won't be created
 
 * 'Patterns to Test' is always mapped to 'validationContent'. If there are multiple patterns to test TSNC makes multiple validation objects.
 

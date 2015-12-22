@@ -18,7 +18,7 @@ import com.xceptance.xlt.common.util.action.data.URLActionDataStore;
 import com.xceptance.xlt.common.util.action.data.URLActionDataValidation;
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 
-/*
+/**
  * Tests the JMXBasedURLActionDataListBuilder. Tests:
  * 
  * <ul>
@@ -29,13 +29,13 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  * <li>tests if actions (Http Requests) are executed correctly
  * <li>tests if XPath extractions work
  * <li>and if ResponseAssertions work 
- * </u>
+ * </ul>
  */
 public class JMXBasedURLActionDataListBuilderTest {
 
 	private final String path = "./config/data/test/";
-	private final String filePath1 = "/home/daniel/Desktop/TSearchDidYouMean.jmx";
-	private final String filePath2 = "/home/daniel/Desktop/HTTP Request.jmx";
+	private final String filePath1 = path + "TSearchDidYouMean.jmx";
+	private final String filePath2 = path + "HTTP Request.jmx";
 	private final String stringNotExistingFile = "notExistingFile";
     private final String fileEmptyFile = path + "emptyFile.yml";
 	
@@ -155,12 +155,12 @@ public class JMXBasedURLActionDataListBuilderTest {
         Assert.assertTrue(actions.isEmpty());
     }
 	
-	/*
-	 * tests a known file.
-	 * tests if the number of actions is correct.
-	 * tests if the names of the actions are as expected.
-	 * tests if the urls of the actions are as expected
-	 * tests if the methods of the actions are as expected
+	/**
+	 * tests a known file. </br>
+	 * tests if the number of actions is correct. </br>
+	 * tests if the names of the actions are as expected. </br>
+	 * tests if the urls of the actions are as expected. </br>
+	 * tests if the methods of the actions are as expected. </br>
 	 */
 	@Test
 	public void testActions() {
@@ -252,9 +252,9 @@ public class JMXBasedURLActionDataListBuilderTest {
 		}
 	}
 	
-	/*
+	/**
 	 * Tests if the HeaderManager is read correctly and the custom headers are set correctly. </br>
-	 * Also tests default headers. 
+	 * Also tests default headers. </br> 
 	 */
 	@Test
 	public void testHeaders() {
@@ -292,8 +292,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 		}
 	}
 	
-	/*
-	 * Checks if the protocol is read correctly. Uses file2.
+	/**
+	 * Checks if the protocol is read correctly. Uses filePath2.
 	 */
 	@Test
 	public void testProtocol() {
@@ -316,11 +316,11 @@ public class JMXBasedURLActionDataListBuilderTest {
 		}
 	}
 	
-	/*
+	/**
 	 * Checks if the variables were stored and used correctly. <br/>
 	 * Tests with a known test case. <br/>
 	 * Only tests the first action since all variables are stored at the start in this test case <br/>
-	 * Only checks if names are mapped to the expected values, doesn't test the number of variables <br/>
+	 * Only checks if names are mapped to the expected values, doesn't test the number of variables 
 	 */
 	@Test
 	public void testVariables() throws EvalError {
@@ -350,7 +350,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		}
 	}
 	
-	/*
+	/**
 	 * Checks if the ResponseAssertions were read correctly. <br/>
 	 * The mapping should be:
 	 * <ul>
@@ -375,7 +375,6 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 * </ul>
 	 * <li>Patterns to Test -> validationContent. If there are multiple patterns to test 
 	 * TSNC makes multiple validations.
-
 	 */
 	@Test
 	public void testResponseAssertion() {
@@ -432,9 +431,9 @@ public class JMXBasedURLActionDataListBuilderTest {
 		Assert.assertEquals(responseCodeExpected, responseCode);
 	}
 	
-	/*
+	/**
 	 * Checks if the XPath-extractions were read correctly. <br/>
-	 * Tests with a known test case. <br/>
+	 * Tests with a known test case. 
 	 */
 	@Test
 	public void testExtractions() {
