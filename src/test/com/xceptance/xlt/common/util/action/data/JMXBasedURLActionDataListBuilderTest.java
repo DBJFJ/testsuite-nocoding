@@ -28,7 +28,7 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  * <li>tests if variables are stored correctly
  * <li>tests if actions (Http Requests) are executed correctly
  * <li>tests if XPath extractions work
- * <li>and if ResponseAssertions work TODO
+ * <li>and if ResponseAssertions work 
  * </u>
  */
 public class JMXBasedURLActionDataListBuilderTest {
@@ -44,6 +44,87 @@ public class JMXBasedURLActionDataListBuilderTest {
 	
     private ParameterInterpreter interpreter = new ParameterInterpreter(properties, dataProvider);
 	private final URLActionDataBuilder actionBuilder = new URLActionDataBuilder();
+	
+	String[][] selectionModeExpected = {
+			
+			// action 1
+			{"Var", "Var", "Regex", "Regex"},	
+			
+			// action 2
+			{"Regex", "Var"},					
+			
+			// action 3
+			{"Regex", "Var", "Var"},			
+			
+			// and so on
+			{"Regex", "Regex", "Regex"},		
+			{"Regex", "Var", "Var"},			
+			{"Regex", "Regex", "Regex"}			
+	};
+	
+	String[][] selectionContentExpected = {
+			
+			// action 1
+			{"justSomeDummyText", "justSomeDummyText",  ".*", ".*"},	
+			
+			// action 2
+			{".*", "${noHitsBanner}"},					
+			
+			// action 3
+			{".*", "${noHitsBanner}", "${suggestedSearchTerm}"},			
+			
+			// and so on
+			{".*", ".*", ".*"},		
+			{".*", "${noHitsBanner}", "${suggestedSearchTerm}"},			
+			{".*", ".*", ".*"}			
+	};
+	
+	String[][] validationModeExpected = {
+			
+			// action 1
+			{URLActionDataValidation.TEXT, URLActionDataValidation.MATCHES,
+				URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS},	
+			
+			// action 2
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS},					
+			
+			// action 3
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS,
+				URLActionDataValidation.EXISTS},			
+			
+			// and so on
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
+					URLActionDataValidation.EXISTS},		
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
+						URLActionDataValidation.EXISTS},			
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
+							URLActionDataValidation.EXISTS}			
+	};
+	
+	String[][] validationContentExpected = {
+			
+			// action 1
+			{"justSomeDummyText", "justSomeD..myT.*",  "id=\"q\"", 
+				"<h1\\ class=\"primary-logo\">"},	
+			
+			// action 2
+			{"class=\"no-hits-banner\">", "We're sorry, no products were found for " +
+					"your search"},					
+			
+			// action 3
+			{"class=\"no-hits-banner\">", "We're sorry, no products were " +
+					"found for your search", "blue"},			
+			
+			// and so on
+			{"<span class=\"breadcrumb-element breadcrumb-result-text\">", 
+					"<div class=\"content-slot slot-grid-header\">", 
+						"<div class=\"results-hits\""},		
+			{"class=\"no-hits-banner\">", "We're sorry, no products were " +
+					"found for your search", "dress%20flora"},			
+			{"<span class=\"breadcrumb-element breadcrumb-result-text\">",
+						"<div class=\"content-slot slot-grid-header\">", 
+							"<div class=\"results-hits\""}			
+	};		
 
     @Test
     public void testCorrectConstructor()
@@ -65,7 +146,7 @@ public class JMXBasedURLActionDataListBuilderTest {
         Assert.assertTrue(actions.isEmpty());
     }
     
-    @Test(expected = IllegalArgumentException.class) //TODO really correct?
+    @Test(expected = IllegalArgumentException.class) 
     public void testOutputForEmptyFile()
     {
         final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
@@ -172,8 +253,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 	}
 	
 	/*
-	 * Tests if the HeaderManager is read correctly and the custom headers are set correctly.
-	 * Doesn't test default headers, since default headers are not yet implemented.
+	 * Tests if the HeaderManager is read correctly and the custom headers are set correctly. </br>
+	 * Also tests default headers. 
 	 */
 	@Test
 	public void testHeaders() {
@@ -257,7 +338,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 				{"searchPhrase2", "blut"},			
 				{"suggestionPhrase2", "blue"},
 				{"searchPhrase3", "dress%20flora"},
-				{"suggestionPhrase3", "dress%20floral"}
+				{"suggestionPhrase3", "dress%20floral"},
+				{"justADummyVariable", "justSomeDummyText"}
 			};
 	
 		for (int i = 0; i <= 5; i++) {
@@ -270,8 +352,30 @@ public class JMXBasedURLActionDataListBuilderTest {
 	
 	/*
 	 * Checks if the ResponseAssertions were read correctly. <br/>
-	 * The mapping is difficult here, so the the test case just checks that 
-	 * the values are syntactically correct for now.
+	 * The mapping should be:
+	 * <ul>
+	 * <li> Main sample and sub-samples/ Main sample only/ Sub-samples only -> Regex with .*
+	 * <li> Text Response/ Document(text) -> Regex with .*
+	 * <li> Jmeter Variable -> Var with ${variable} 
+	 * 
+	 * <li> URL Sampled -> can't be mapped or isn't implemented yet
+	 * <li> Response Message -> can't be matched or isn't implemented yet
+	 * <li> Response Code -> Http Response Code (not a validation object in TSNC)	
+	 * <li> Response Headers -> can't be mapped easily 
+	 * <li> Ignore Status -> can't be mapped 
+	 * </ul>
+	 * 
+	 * Pattern Matching Rules are mapped to TSNCs validationMode
+	 * <ul>
+	 * <li> Contains -> Exists
+	 * <li> Matches -> Matches
+	 * <li> Equals -> Text
+	 * <li> Substring -> Exists
+	 * <li> Not -> can't be matched
+	 * </ul>
+	 * <li>Patterns to Test -> validationContent. If there are multiple patterns to test 
+	 * TSNC makes multiple validations.
+
 	 */
 	@Test
 	public void testResponseAssertion() {
@@ -279,15 +383,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
-		String[][] selectionModeExpected = {
-				{"Regex", "Regex"},
-				{"Regex", "Var"},
-				{"Regex", "Var", "Var"},
-				{"Regex", "Regex", "Regex"},
-				{"Regex", "Var", "Var"},
-				{"Regex", "Regex", "Regex"}
-		};
 		
+		// tests the sample test case
 		for (int iAction = 0; iAction < actions.size(); iAction++) {
 			URLActionData action = actions.get(iAction);
 			List<URLActionDataValidation> validations = action.getValidations();
@@ -295,28 +392,44 @@ public class JMXBasedURLActionDataListBuilderTest {
 			
 			for (int iValidation = 0; iValidation < length; iValidation++) {
 				URLActionDataValidation validation = validations.get(iValidation);
-
-				String selectionMode = validation.getSelectionMode();	
-				Assert.assertEquals(selectionModeExpected[iAction][iValidation], selectionMode);
 				
-				//TODO the rest
+				// Note: validation.getSomethingSomething gets the dynamic interpretation
+				// from the interpreter if there is one. That means a variable ${var} would
+				// be returned with it's value if there is one. ( ${var} -> value
+				
+				// If the variable doesn't have a value yet (because the value is 
+				// dynamically assigned at runtime) the raw variable is returned 
+				// ( ${var} -> ${var}
+				
+				String selectionMode = validation.getSelectionMode();
 				String selectionContent = validation.getSelectionContent();
 				String validationMode = validation.getValidationMode();	
 				String validationContent = validation.getValidationContent();
-				boolean result = true;
 
+				// assert selectionMode	
+				Assert.assertEquals(selectionModeExpected[iAction][iValidation], selectionMode);	
+			
+				// assert selectionContent
+				Assert.assertEquals(selectionContentExpected[iAction][iValidation], selectionContent);
 				
-				// TODO test selectionMode and validationMode and validationContent 
-				// and HTTPResponseCode
-								
-				// testing whether the selection Content has any unexpected values
-				// it should contain variables (${variable} or everything ".*"
-				if ( !(selectionContent.contains("${") || selectionContent.equals(".*")) ) {
-					result = false;
-				}
-				Assert.assertTrue(result);
+				// assert validationMode
+				Assert.assertEquals(validationModeExpected[iAction][iValidation], validationMode);
+				
+				// assert validationContent
+				Assert.assertEquals(validationContentExpected[iAction][iValidation], validationContent);
 			}
 		}
+		
+		// tests if the response code is validated
+		jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath2, 
+				interpreter, actionBuilder);
+		actions = jmxBasedBuilder.buildURLActionDataList();
+		URLActionData action = actions.get(0);
+		
+		int responseCodeExpected = 302;
+		int responseCode = action.getHttpResponseCode(); 
+		
+		Assert.assertEquals(responseCodeExpected, responseCode);
 	}
 	
 	/*
