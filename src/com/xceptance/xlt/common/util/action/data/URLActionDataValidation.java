@@ -32,6 +32,18 @@ public class URLActionDataValidation
      * the individual selection specification. 
      */
     private String selectionContent;
+    
+    /**
+     * further specification of the selection. At the moment it can only specify which group 
+     * if the selectionMode is regex. Example: SelectionMode: regexp, selectionContent: ab(cde)f(ghi)j
+     * subSelectionMode: Group, subSelectionContent: 1
+     */
+	private String subSelectionMode;
+
+	/**
+	 * see subSelectionMode
+	 */
+	private String subSelectionValue;
 
     /**
      * the way you want to validate the response information. <br>
@@ -103,6 +115,24 @@ public class URLActionDataValidation
         PERMITTEDVALIDATIONMODE.add(COUNT);
         PERMITTEDVALIDATIONMODE.add(EXISTS);
     }
+    
+	/**
+	 * Supported sub selection modes:
+	 * <ul>
+	 * <li> {@link #REGEXGROUP}
+	 * </ul>
+	 */
+	public final static Set<String> PERMITTEDSUBSELECTIONMODE = new HashSet<String>();
+	
+	/**
+	 * Capturing group for regex
+	 */
+	public static final String REGEXGROUP = "Group";
+	
+	static
+	{
+		PERMITTEDSUBSELECTIONMODE.add(REGEXGROUP);
+	}
 
     /**
      * Takes the minimal set of parameters that are necessary to select and v information <br>
@@ -341,4 +371,28 @@ public class URLActionDataValidation
                                                     this.name, tag);
         return message;
     }
+	/**
+	 * @return the subSelectionMode
+	 */
+	public String getSubSelectionMode() {
+		return subSelectionMode;
+	}
+	/**
+	 * @param subSelectionMode the subSelectionMode to set
+	 */
+	public void setSubSelectionMode(String subSelectionMode) {
+		this.subSelectionMode = subSelectionMode;
+	}
+	/**
+	 * @return the subSelectionValue
+	 */
+	public String getSubSelectionValue() {
+		return subSelectionValue;
+	}
+	/**
+	 * @param subSelectionValue the subSelectionValue to set
+	 */
+	public void setSubSelectionValue(String subSelectionValue) {
+		this.subSelectionValue = subSelectionValue;
+	}
 }

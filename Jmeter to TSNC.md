@@ -1,25 +1,25 @@
-# Jmeter --> TSNC Translation
+# Jmeter to TSNC Translation
 
 TSNC can recognize test files created with Jmeter and execute them.
 
-While TSNC and Jmeter are both test tools, they concentrate on different areas and work in different ways. TSNC is a small test tool focused on calling urls, validating results and showing the results. Jmeter is a large load testing tool with a much wider set of functions. As a result, not all Jmeter tests can be translated to TSNC.
+While TSNC and Jmeter are both test tools, they concentrate on different areas and work in different ways. TSNC is a small test tool focused on calling urls, validating results and showing the results. Jmeter is a large load testing tool with a much wider set of functions working in a different way. As a result, not all Jmeter tests can be translated to TSNC.
 
 Load Test configurations and Listeners will be ignored since TSNC uses it's own properties and result browsers.
 
 ### Generally speaking, TSNC will translate tests following this structure: 
 
 * Thread Group
-* * (Variable Declaration)
-* * HTTP Request Sampler
-* * * XPath Extractions
-* * * Response Assertions
-* * (Variable Declaration)
-* * HTTP Request Sampler
-* * * XPath Extractions
-* * * Response Assertions 
+    * (Variable Declaration)
+    * HTTP Request Sampler
+        * XPath Extractions
+        * Response Assertions
+    * (Variable Declaration)
+    * HTTP Request Sampler
+        * XPath Extractions
+        * Response Assertions 
  
-If the Jmeter test does not follow this structure and/ or includes other important elements it won't be translated correctly. 
-Most notably logic elements like if or loops won't be translated. Extractors other then XPath Extractors won't be translated. Assertions other then Response Assertions won't be translated. Requests/ Samplers other then Http Requests won't be translated. Beanshell and JDBC connections won't be translated. There are minor differences in the Response Assertions/ the XPath Extractions.
+If the Jmeter test does not follow this structure and/ or includes other important elements it won't run on TSNC.  
+Logic elements like if or loops don't have an aquivalent in TSNC and will be ignored. Extractors other then XPath Extractors won't be translated. Assertions other then Response Assertions won't be translated. Requests/ Samplers other then Http Requests won't be translated. Beanshell and JDBC connections won't be translated. There are also some minor differences in the Response Assertions/ the XPath Extractions.  
 Explanations and details for specific elements can be found below.
  
 #### Config Elements
@@ -50,8 +50,9 @@ XPath extractions are read with name and XPath. The big difference is that in TS
 ###### Regular Expression Extractions
 
 While TSNC and Jmeter both use Regular Expression Extractors, they work in slightly different ways. The regular expression in Jmeter contains a set of round brackets and everything in these brackets is extracted.
-For example: A regex extractor with "This is a great example(.*?)?" used on the String "This is a great example, isn't it? Yes it is." would extract ", isn't is".
-A regex extractor in TSNC extracts the whole expression. Using the same values it would extract "This is a great example, isn't it?". **There is no workaround yet and so regular expression extractions can't be translated yet.** 
+For example: A regex extractor with *This is a great example(.\*?)?* used on the String *This is a great example, isn't it? Yes it is.* would extract *, isn't it*.
+A regex extractor in TSNC extracts the whole expression. Using the same values it would extract *This is a great example, isn't it?*.  
+**There is no workaround yet and so regular expression extractions can't be translated yet.** 
 
 #### Response Assertions
 
@@ -68,28 +69,28 @@ TSNC also adds a default HttpResponseCode=200 validation to every action, so red
 
 The mapping for Response Assertions from Jmeter to TSNC is as such:
 
-* 'Apply To' is mapped to 'selectionMode'
-* * Main sample and sub-samples/ Main sample only/ Sub-samples only -> Regex 
-* * Jmeter Variable -> Var  
+* **Apply To** is mapped to 'selectionMode'
+    * Main sample and sub-samples/ Main sample only/ Sub-samples only -> Regex 
+    * Jmeter Variable -> Var  
 
-* 'Response Field to Test' is also mapped to 'selectionMode'
-* * Text Response/ Document(text) -> Regex 
-* * URL Sampled can't be mapped yet
-* * Response Code -> Http Response Code (not a validation object. There can only be one response code per action but something else woudn't make sense anyway.)	
-* * Response Message can't be mapped
-* * Response Headers -> can't be mapped, validations won't be created  
-* * Ignore Status -> can't be mapped, validations won't be created 
+* **Response Field to Test** is also mapped to 'selectionMode'
+    * Text Response/ Document(text) -> Regex 
+    * URL Sampled can't be mapped yet
+    * Response Code -> Http Response Code (not a validation object. There can only be one response code per action but something else woudn't make sense anyway.)	
+    * Response Message can't be mapped
+    * Response Headers -> can't be mapped, validations won't be created  
+    * Ignore Status -> can't be mapped, validations won't be created 
 
 The selectionContent from TSNC is always mapped to '.*' unless a variable should be asserted. In that case is is mapped to ${variablename}.
 
-* 'Pattern Matching Rules' are mapped to TSNCs validationMode
-* * Contains -> Exists
-* * Matches -> Matches
-* * Equals -> Text
-* * Substring -> Exists
-* * Not can't be mapped, validations won't be created
+* **Pattern Matching Rules** are mapped to TSNCs validationMode
+    * Contains -> Exists
+    * Matches -> Matches
+    * Equals -> Text
+    * Substring -> Exists
+    * Not can't be mapped, validations won't be created
 
-* 'Patterns to Test' is always mapped to 'validationContent'. If there are multiple patterns to test TSNC makes multiple validation objects.
+* **Patterns to Test** is always mapped to 'validationContent'. If there are multiple patterns to test TSNC makes multiple validation objects.
 
 #### Listeners 
 

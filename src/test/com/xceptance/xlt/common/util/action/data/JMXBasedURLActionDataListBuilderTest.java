@@ -1,9 +1,13 @@
 package test.com.xceptance.xlt.common.util.action.data;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.yaml.snakeyaml.Yaml;
 
 import bsh.EvalError;
 import bsh.Interpreter;
@@ -36,6 +40,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	private final String path = "./config/data/test/";
 	private final String filePath1 = path + "TSearchDidYouMean.jmx";
 	private final String filePath2 = path + "HTTP Request.jmx";
+	private final String filePath3 = path + "regex.jmx";
 	private final String stringNotExistingFile = "notExistingFile";
     private final String fileEmptyFile = path + "emptyFile.yml";
 	
@@ -290,6 +295,14 @@ public class JMXBasedURLActionDataListBuilderTest {
 			Assert.assertEquals(header.getName(), defaultHeader[0]);
 			Assert.assertEquals(header.getValue(), defaultHeader[1]);
 		}
+		
+		// here for development TODO
+		try {
+			dumpYamlToFile(actions);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -436,7 +449,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 * Tests with a known test case. 
 	 */
 	@Test
-	public void testExtractions() {
+	public void testXPathExtractions() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
 				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
@@ -479,5 +492,45 @@ public class JMXBasedURLActionDataListBuilderTest {
 				Assert.assertEquals(extractedExpected[iAction][iExtraction][1], actualName);	
 			}
 		}
+	}
+	
+	/*
+	 * Tests the regex extractor with a sample file. Right now it's just one regex 
+	 * extractor with a group (round brackets) and which should extract the first 
+	 * match. TODO expand. 
+	 */
+	@Test
+	public void testRegexExpractions() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath3, 
+				interpreter, actionBuilder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
+		URLActionData action = actions.get(0);
+		URLActionDataStore store = action.getStore().get(0);
+		
+		String subSelectionModeExpected = URLActionDataStore.REGEXGROUP;
+		String subSelectionContentExpected = "1"; 
+		
+		String subSelectionModeActual = store.getSubSelectionMode();
+		String subSelectionContentActual = store.getSubSelectionContent();
+		
+		Assert.assertEquals(subSelectionModeExpected, subSelectionModeActual);
+		Assert.assertEquals(subSelectionContentExpected, subSelectionContentActual);
+	}
+	/**
+	 * Mainly just here for development. TODO
+	 * 
+	 * @param obj
+	 * @throws FileNotFoundException
+	 */
+	private void dumpYamlToFile(Object obj) throws FileNotFoundException {
+		PrintWriter printwriter = new PrintWriter("/home/daniel/Desktop/dump.yml");	
+	    StringWriter stringwriter = new StringWriter();
+	
+		Yaml yaml = new Yaml();
+		yaml.dump(obj, stringwriter);
+		
+		printwriter.print(stringwriter.toString());
+		
+		printwriter.close();
 	}
 }

@@ -37,8 +37,16 @@ public class URLActionDataStore
 	 */
 	private String selectionContent;
 
+    /**
+     * further specification of the selection. At the moment it can only specify which group 
+     * if the selectionMode is regex. Example: SelectionMode: regexp, selectionContent: ab(cde)f(ghi)j
+     * subSelectionMode: Group, subSelectionContent: 1
+     */
 	private String subSelectionMode;
 
+	/**
+	 * see subSelectionMode
+	 */
 	private String subSelectionValue;
 
 	/**
@@ -79,7 +87,6 @@ public class URLActionDataStore
 	 * <li> {@link #REGEXGROUP}
 	 * </ul>
 	 */
-	
 	public final static Set<String> PERMITTEDSUBSELECTIONMODE = new HashSet<String>();
 	
 	/**

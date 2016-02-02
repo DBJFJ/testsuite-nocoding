@@ -3,6 +3,8 @@ package com.xceptance.xlt.common.util.action.data;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +18,8 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
+
+import org.yaml.snakeyaml.Yaml;
 
 import bsh.EvalError;
 
@@ -44,8 +48,7 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  * <p>If the Jmeter test does not follow this structure and/ or includes other 
  * important elements it won't be translated correctly.</p>
  * 
- * Configs and properties are usually not translated. 
- * (Exception: Default protocol and header.) </br>
+ * Load Test configurations like the number of threads or the ramp up time won't be translated. </br>
  * Listeners are ignored. TSNCs own result browser will be used.
  * 
  * On the technical side Jmeter saves it's tests in an xml file without a DTD. 
@@ -59,7 +62,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * The following constant are used for the tagnames in Jmeter. 
 	 * For example, in <Arguments ...> 'Arguments' is the tag name.
 	 * 
-	 * Their names follow the theme T (for tag) + NAME + "_" + abbreviation of their function.
+	 * Their names follow the theme T (for tag) + NAME "_" + abbreviation of their function.
 	 * An "S" at the end signifies plural. Example: TNAME_VARS for tagNameVariables.
 	 * Underlines are used for readability.
 	 */
@@ -85,11 +88,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String TNAME_XPATH_EXTRACT = "XPathExtractor";
 	
 	private final String TNAME_REGEX_EXTRACT = "RegexExtractor";
-
+	
 	/*
 	 * Jmeter supports a tree structure, but the elements below a certain node
 	 * are not inside the xml tag in the xml file. Instead a hashtree tag follows all tags with something 
-	 * below them in the tree structure. Inside the hashtree tag are the nodes below tag in question.
+	 * below them in the tree structure. Inside the hashtree tag are the nodes below the tag in question.
 	 * For example: An action which contains an assertion 
 	 * 
 	 * <HTTPSamplerProxy ...> ...</HTTPSamplerProxy> 
@@ -113,7 +116,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * <p>The following constants are used for the attribute names in Jmeter. 
 	 * For example, in <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" 
 	 * testname="test for correcting the mistake afterwards 1" enabled="true"> 
-	 * 'testname' is the attribute name for the name of the attribute which defines the actin name.
+	 * 'testname' is the attribute name for the name of the attribute which defines the action name.
 	 * 
 	 * Their names follow the theme ATTR (for attribute) + N (for name) + abbreviation of their function.
 	 * An "S" at the end signifies plural. Example: ATTRNACTIONNAME for attributeNameActionName.
@@ -283,6 +286,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	        XltLogger.runTimeLogger.error("Jmeters XML Stream was interrupted");
 	        throw new IllegalArgumentException(e.getMessage());
 		}
+		
+		// TODO dump yaml to file
+		
 		return actions;
 	}
 	
@@ -920,20 +926,19 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					storeBuilder.reset();
 					break;
 				}
-//				Doesnt work yet
 				case TNAME_REGEX_EXTRACT: {
 					
-//					// read regexExtractor
-//					String selectionMode = URLActionDataStore.REGEXP;
-//					storeBuilder.setInterpreter(interpreter);
-//					URLActionDataStore variableToExtract = readRegexExtractor(selectionMode, 
-//							reader, storeBuilder);
-//					if (variableToExtract != null) {
-//						variablesToExtract.add(variableToExtract);
-//					}
-//					storeBuilder.reset();
+					// read regexExtractor
+					String selectionMode = URLActionDataStore.REGEXP;
+					storeBuilder.setInterpreter(interpreter);
+					URLActionDataStore variableToExtract = readRegexExtractor(selectionMode, 
+							reader, storeBuilder);
+					if (variableToExtract != null) {
+						variablesToExtract.add(variableToExtract);
+					}
+					storeBuilder.reset();
 					
-					XltLogger.runTimeLogger.warn("Coudn't translate RegEx Extraction from Jmeter to TSNC");
+					XltLogger.runTimeLogger.debug("Reading RegexExtractor ..." );
 					break;
 				}
 				case TNAME_HEADERS: {
@@ -1217,7 +1222,6 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		}
 		
 		// if the response code should be validated
-		System.out.println(name);
 		if (selectionMode.equals(VALIDATE_RESP_CODE)) {
 			String httpResponseCode = allValidationContent.get(0);
 			actionBuilder.setHttpResponceCode(httpResponseCode);
@@ -1304,11 +1308,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * {@link TNAME_REGEX_EXTACT} tag. Reads until the end of the {@link TNAME_REGEX_EXTACT} tag and 
 	 * returns an URLActionDataStore object. </br>
 	 * 
-	 * _But the method doesn't work for now, so it's not called!!!_ </br>
-	 * 
-	 * <p>In Jmeter the extractor extracts everything inside the parentheses of the regular expression
-	 * ( and ) - the round brackets enclose the portion of the match string to be returned 
-	 * TSNC returns the whole expression and I havn't found a conversion yet.</p>
+	 * <p>In Jmeter the extractor extracts everything inside the parentheses of the regular expression.
+	 * ( and ) - the round brackets enclose the portion of the match string to be returned. TSNC can do the 
+	 * same. However there are differences if there is more then one match. Jmeter would return every match,
+	 * TSNC only returns one. <\br>
+	 * The way it's written, the first match is returned.
+	 * </p>
+	 * <p> Actually, it can be spezified which group should be returned. But that isn't implemented yet TODO
+	 * </p>
 	 * 
 	 * @param selectionMode
 	 * @param reader
@@ -1316,10 +1323,10 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * @return
 	 * @throws XMLStreamException
 	 */
-	@SuppressWarnings("unused")
 	private URLActionDataStore readRegexExtractor(String selectionMode, 
 			XMLEventReader reader, URLActionDataStoreBuilder storeBuilder) throws XMLStreamException {
 				
+		String GROUP_NMB = "1";
 		String name = null;
 		String selectionContent = null;
 		
@@ -1369,6 +1376,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		storeBuilder.setName(name);
 		storeBuilder.setSelectionMode(selectionMode);
 		storeBuilder.setSelectionContent(selectionContent);
+		
+		// return whatever was in the round brackets in the first match
+		storeBuilder.setSubSelectionMode(URLActionDataStore.REGEXGROUP);
+		storeBuilder.setSubSelectionContent(GROUP_NMB);
+		
 		URLActionDataStore varToExtract = storeBuilder.build();
 		return varToExtract;
 	}
@@ -1443,5 +1455,23 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	        XltLogger.runTimeLogger.warn(warning);
 	        return warning;
 		}
+	}
+	
+	/**
+	 * Dump the structure to a yaml file. Just a test method for now. TODO
+	 * 
+	 * @param obj
+	 * @throws FileNotFoundException
+	 */
+	private void dumpYamlToFile(Object obj) throws FileNotFoundException {
+		PrintWriter printwriter = new PrintWriter("/home/daniel/Desktop/dump.yml");	
+	    StringWriter stringwriter = new StringWriter();
+	
+		Yaml yaml = new Yaml();
+		yaml.dump(obj, stringwriter);
+		
+		printwriter.print(stringwriter.toString());
+		
+		printwriter.close();
 	}
 }
