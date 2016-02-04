@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -172,12 +174,12 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
         createActionList(dataList);
                 
       try {
-    	  	dumpActionsYaml(actions, new File("/home/daniel/Desktop/dump.yml"));
+    	  	dumpActionsYaml(actions, Paths.get("/home/daniel/Desktop/dump.yml"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-        
+
         return this.actions;
     }
 
@@ -1250,13 +1252,17 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 	 * that arn't supported in the {@link JMXBasedURLActionDataListBuilder}. The formatting doesn't quite match
 	 * the suggested format either. Attributes are included even if they are empty or null, the indention is odd 
 	 * at times especially with dashes and there's no whitespace in front of colons.
+	 * <\br>
+	 * It also plain ignores variables the user defined outside of the actions at the moment,
+	 * since I have not found a (plausible) way to get them out of the ParameterInterpreter yet.
 	 *  
 	 * @param file 
 	 * @param actions 
 	 */
-	protected static void dumpActionsYaml(List<URLActionData> actions, File dumpThere) throws FileNotFoundException {
+	protected static void dumpActionsYaml(List<URLActionData> actions, Path dumpThere) throws FileNotFoundException {
 		
-		PrintWriter printwriter = new PrintWriter(dumpThere);
+		XltLogger.runTimeLogger.info("Writing Test Case to YAML file ...");
+		PrintWriter printwriter = new PrintWriter(dumpThere.toFile());
 	
 	    DumperOptions dumperoptions = new DumperOptions();
 	    dumperoptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -1268,6 +1274,7 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 								
 		printwriter.print(s);
 		printwriter.close();
+		
 	}
 	
 	/**
@@ -1301,7 +1308,7 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 		List<Map<String, Object>> root = new ArrayList<>();
 		
 		// get the variables that should be stored seperately
-		// how access interpreter ...?
+		// but how to get them out of the interpreter
 		
 		// iterate over the actions
 		for (int i = 0; i < actions.size(); i++) {

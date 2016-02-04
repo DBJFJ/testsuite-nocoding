@@ -3,8 +3,8 @@ package com.xceptance.xlt.common.util.action.data;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +18,6 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
-
-import org.yaml.snakeyaml.Yaml;
 
 import bsh.EvalError;
 
@@ -81,7 +79,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	
 	private final String TNAME_ASSERT_RESP = "ResponseAssertion";
 	
-	private final String TNAME_ASSERT_ALL_CONTENT = "collectionProp";
+	private final String TNAME_ASSERT_ALL_VALUES = "collectionProp";
 	
 	private final String TNAME_ASSERT_ONE_CONTENT = "stringProp";
 	
@@ -269,7 +267,19 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					String tagName = getTagName(se);
 					
 					if (tagName.equals(TNAME_THREAD_GROUP)) {
-						readThreadGroup(reader);
+						String name = getAttributeValue(ATTRN_ACTION_NAME, se);
+						XltLogger.runTimeLogger.info("Reading " + name + "...");
+						List<URLActionData> testCase = readThreadGroup(reader);
+						
+						// dump it into a yaml file
+						Path dumpFile = Paths.get("./config/data" + name + ".yml");
+						try {
+							YAMLBasedURLActionDataListBuilder.dumpActionsYaml(testCase,	dumpFile);
+						} catch (FileNotFoundException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}	
+						
 						break;
 					}
 				}
@@ -286,8 +296,6 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	        XltLogger.runTimeLogger.error("Jmeters XML Stream was interrupted");
 	        throw new IllegalArgumentException(e.getMessage());
 		}
-		
-		// TODO dump yaml to file
 		
 		return actions;
 	}
@@ -314,7 +322,6 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					break;
 				}
 			}
-			
 			// many of Jmeters Load Test Configurations are here
 		}
 		
@@ -1004,11 +1011,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				StartElement se = event.asStartElement();
 				String tagName = getTagName(se);
 				
-				if (tagName.equals(TNAME_ASSERT_ALL_CONTENT)) {
+				if (tagName.equals(TNAME_ASSERT_ALL_VALUES)) {
 					
 					// inside the TNAME_ASSERT_ALL_CONTENT are all the values that
 					// should be validated. Read them
-					allValidationContent = readallValidationContent(reader);
+					allValidationContent = readAllValuesToValidate(reader);
 				}
 				
 				String attrName = getAttributeValue(ATTRN_NAME, se);
@@ -1045,7 +1052,17 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			}
 		}
 	
-		if (selectionMode != null && validationMode != null) {
+		if (selectionMode != null && validationMode != null) {		
+			
+			// in Jmeters "validate variable contains/ substring xyz" validations
+			// contains and substring still get mapped to TSNCs exist.
+			// but validate variable Exists xyz doesn't make any sense
+			// so in that case, set validationMode to Matches
+			if (selectionMode == URLActionDataValidation.VAR &&
+					(validationMode == URLActionDataValidation.EXISTS)) {
+				validationMode = URLActionDataValidation.MATCHES;
+			}
+			
 			createValidations(name, selectionMode, selectionContent, validationMode, 
 					allValidationContent, actionBuilder);
 		}
@@ -1064,8 +1081,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * Since a significant part of them don't match it defaults to {@link URLActionDataValidation#REGEXP}.
 	 * 
 	 * @param selectionModeInJmt the rough aquivalent to the selectionMode in Jmeter, an integer value
-	 * @param selectionMode the selectionMode if it was set already (there are multiple places for that since
-	 * 			it doesn't map itself nicely, null otherwise)
+	 * @param selectionMode the selectionMode if it was set already (there are multiple places for that, 
+	 * 						it might have been set to {@link URLActionDataValidation#VAR} already) null otherwise)
 	 * @return the selectionMode in TSNC
 	 */
 	private String getSelectionModeFromJmt(String selectionModeInJmt, String selectionMode) {
@@ -1157,7 +1174,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * @return multiple String aquivalent to multiple validationContents
 	 * @throws XMLStreamException
 	 */
-	private List<String> readallValidationContent(XMLEventReader reader) throws XMLStreamException {
+	private List<String> readAllValuesToValidate(XMLEventReader reader) throws XMLStreamException {
 		
 		List<String> allValidationContent = new ArrayList<>();
 		
@@ -1167,7 +1184,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (event.isEndElement()) {
 				EndElement ee = event.asEndElement();
 				String tagName = getTagName(ee);
-				if (tagName.equals(TNAME_ASSERT_ALL_CONTENT)) {
+				if (tagName.equals(TNAME_ASSERT_ALL_VALUES)) {
 					break;
 				}
 			}
@@ -1228,9 +1245,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		}
 		else {
 			for (String validationContent : allValidationContent) {
-				
-				// map matches --> matches
-				
+						
 				URLActionDataValidation validation = new URLActionDataValidation(name,
 						selectionMode, selectionContent, validationMode, 
 						validationContent, interpreter);
@@ -1314,7 +1329,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * TSNC only returns one. <\br>
 	 * The way it's written, the first match is returned.
 	 * </p>
-	 * <p> Actually, it can be spezified which group should be returned. But that isn't implemented yet TODO
+	 * <p>
+	 * Actually, it can be specified which group should be returned. But that isn't implemented yet TODO
 	 * </p>
 	 * 
 	 * @param selectionMode
@@ -1455,23 +1471,5 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	        XltLogger.runTimeLogger.warn(warning);
 	        return warning;
 		}
-	}
-	
-	/**
-	 * Dump the structure to a yaml file. Just a test method for now. TODO
-	 * 
-	 * @param obj
-	 * @throws FileNotFoundException
-	 */
-	private void dumpYamlToFile(Object obj) throws FileNotFoundException {
-		PrintWriter printwriter = new PrintWriter("/home/daniel/Desktop/dump.yml");	
-	    StringWriter stringwriter = new StringWriter();
-	
-		Yaml yaml = new Yaml();
-		yaml.dump(obj, stringwriter);
-		
-		printwriter.print(stringwriter.toString());
-		
-		printwriter.close();
 	}
 }
