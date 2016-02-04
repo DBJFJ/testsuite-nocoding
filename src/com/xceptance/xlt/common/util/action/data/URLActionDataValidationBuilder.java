@@ -20,6 +20,11 @@ public class URLActionDataValidationBuilder
     private String selectionMode;
 
     private String selectionContent;
+    
+    // subselection copied from {@link URLActionDataStoreBuilder
+	private String subSelectionMode;
+
+	private String subSelectionContent;
 
     private String validationMode;
 
@@ -43,12 +48,24 @@ public class URLActionDataValidationBuilder
 
         try
         {
-            validation = new URLActionDataValidation(getName(),
-                                                     getSelectionMode(),
-                                                     getSelectionContent(),
-                                                     getValidationMode(),
-                                                     getValidationContent(),
-                                                     getInterpreter());
+        	if (this.subSelectionMode==null) {
+        		validation = new URLActionDataValidation(getName(),
+        												getSelectionMode(),
+        												getSelectionContent(),
+        												getValidationMode(),
+        												getValidationContent(),
+        												getInterpreter());
+        	}
+        	else {
+        		validation = new URLActionDataValidation(getName(),
+						getSelectionMode(),
+						getSelectionContent(),
+						getSubSelectionMode(),
+						getSubSelectionContent(),
+						getValidationMode(),
+						getValidationContent(),
+						getInterpreter());
+        	}
         }
         catch (final IllegalArgumentException e)
         {
@@ -69,6 +86,8 @@ public class URLActionDataValidationBuilder
         this.name = null;
         this.selectionMode = null;
         this.selectionContent = null;
+        this.subSelectionMode = null;
+        this.subSelectionContent = null;
         this.validationMode = null;
         this.validationContent = null;
         this.interpreter = null;
@@ -156,4 +175,28 @@ public class URLActionDataValidationBuilder
         final String message = MessageFormat.format("Set tag \"{0}\" ", tag);
         return message;
     }
+    
+    public String getSubSelectionMode()
+	{
+		return subSelectionMode;
+	}
+
+	public void setSubSelectionMode(String subSelectionMode)
+	{
+		this.subSelectionMode = subSelectionMode;
+		XltLogger.runTimeLogger.debug(infoSetTagToValue("subSelectionMode",
+				subSelectionMode));
+	}
+
+	public String getSubSelectionContent()
+	{
+		return subSelectionContent;
+	}
+
+	public void setSubSelectionContent(String subSelectionContent)
+	{
+		this.subSelectionContent = subSelectionContent;
+		XltLogger.runTimeLogger.debug(infoSetTagToValue("subSelectionContent",
+				subSelectionContent));
+	}
 }

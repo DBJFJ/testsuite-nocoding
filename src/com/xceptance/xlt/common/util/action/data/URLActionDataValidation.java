@@ -36,7 +36,8 @@ public class URLActionDataValidation
     /**
      * further specification of the selection. At the moment it can only specify which group 
      * if the selectionMode is regex. Example: SelectionMode: regexp, selectionContent: ab(cde)f(ghi)j
-     * subSelectionMode: Group, subSelectionContent: 1
+     * subSelectionMode: Group, subSelectionContent: 1 <\br>
+     * copied from {@link URLActionDataStore}
      */
 	private String subSelectionMode;
 
@@ -159,6 +160,27 @@ public class URLActionDataValidation
         setValidationContent(validationContent);
         setParameterInterpreter(interpreter);
     }
+    
+    public URLActionDataValidation(final String name,
+            final String selectionMode,
+            final String selectionContent,
+            final String subSelectionMode,
+            final String subSelectionContent,
+            final String validationMode,
+            final String validationContent,
+            final ParameterInterpreter interpreter)
+    {
+    	XltLogger.runTimeLogger.debug("Creating new Validation Item");
+    	setName(name);
+    	setSelectionMode(selectionMode);
+    	setSelectionContent(selectionContent);
+    	setSubSelectionMode(subSelectionMode);
+    	setSubSelectionValue(subSelectionContent);
+    	setValidationMode(validationMode);
+    	setValidationContent(validationContent);
+    	setParameterInterpreter(interpreter);
+}
+    
     /**
      * For debugging purpose. <br>
      * 'err-streams' the attributes of the object without dynamic interpretation of the return values. <br>
@@ -168,6 +190,8 @@ public class URLActionDataValidation
         System.err.println("\t\t" + "Name : " + name);
         System.err.println("\t\t\t" + "Selection Mode : " + selectionMode);
         System.err.println("\t\t\t" + "Selection Value : " + selectionContent);
+        System.err.println("\t\t\t" + "Selection Mode : " + subSelectionMode);
+        System.err.println("\t\t\t" + "Selection Value : " + subSelectionValue);
         System.err.println("\t\t\t" + "Validation Mode : " + validationMode);
         System.err.println("\t\t\t" + "Validation Value : " + validationContent);
     }
@@ -180,6 +204,8 @@ public class URLActionDataValidation
         System.err.println("\t\t" + "Name : " + getName());
         System.err.println("\t\t\t" + "Selection Mode : " + getSelectionMode());
         System.err.println("\t\t\t" + "Selection Content : " + getSelectionContent());
+        System.err.println("\t\t\t" + "Selection Mode : " + getSubSelectionMode());
+        System.err.println("\t\t\t" + "Selection Content : " + getSubSelectionContent());
         System.err.println("\t\t\t" + "Validation Mode : " + getValidationMode());
         System.err.println("\t\t\t" + "Validation Content : " + getValidationContent());
     }
@@ -232,6 +258,33 @@ public class URLActionDataValidation
         this.selectionContent = selectionContent;
         XltLogger.runTimeLogger.debug(getSetTagToValueMessage("Selection Content", selectionContent));
     }
+    
+	/**
+	 * copied over from {@link URLActionDataStore}
+	 * @param subSelectionMode
+	 *            :if NULL throws.
+	 * @throws IllegalArgumentException
+	 */
+	public void setSubSelectionMode(final String subSelectionMode)
+	{
+		this.subSelectionMode = (subSelectionMode != null) ? subSelectionMode
+				: (String) throwIllegalArgumentException(getTagCannotBeNullMessage("Sub-Selection Mode"));
+		XltLogger.runTimeLogger.debug(MessageFormat.format("Set 'Sub-Selection Mode': \"{0}\"",
+				subSelectionMode));
+	}
+	/**
+	 * copied over from {@link URLActionDataStore}
+	 * @param subSelectionValue
+	 *            :if NULL throws.
+	 * @throws IllegalArgumentException
+	 */
+	public void setSubSelectionValue(final String subSelectionValue)
+	{
+		this.subSelectionValue = (subSelectionValue != null) ? subSelectionValue
+				: (String) throwIllegalArgumentException(getTagCannotBeNullMessage("Sub-Selection Value"));
+		XltLogger.runTimeLogger.debug(MessageFormat.format("Set 'Sub-Selection Value': \"{0}\"",
+				subSelectionValue));
+	}
 
     /**
      * @param name :if NULL throws.
@@ -263,6 +316,26 @@ public class URLActionDataValidation
         }
         return dynamicSelectionMode;
     }
+    
+	/**
+	 * @return {@link #subSelectionMode }, after its dynamic interpretation via the
+	 *         {@link #interpreter}.
+	 */
+	@Nullable
+	public String getSubSelectionMode()
+	{
+		String dynamicSubSelectionMode = null;
+		if(this.subSelectionMode != null)
+		{
+			dynamicSubSelectionMode = interpreter.processDynamicData(this.subSelectionMode);
+			if (!isPermittedSubSelectionMode(dynamicSubSelectionMode))
+			{
+				throw new IllegalArgumentException(getIllegalValueForTagMessage(dynamicSubSelectionMode,
+						"Sub-Selection Mode"));
+			}
+		}
+		return dynamicSubSelectionMode;
+	}
 
     /**
      * @return {@link #selectionContent}, after its dynamic interpretation via the {@link #interpreter}.
@@ -273,6 +346,16 @@ public class URLActionDataValidation
         return interpreter.processDynamicData(selectionContent);
     }
 
+	/**
+	 * @return {@link #selectionContent }, after its dynamic interpretation via
+	 *         the {@link #interpreter}.
+	 */
+	@Nullable
+	public String getSubSelectionContent()
+	{
+		return interpreter.processDynamicData(this.subSelectionValue);
+	}
+    
     /**
      * @return {@link #validationMode}, after its dynamic interpretation via the {@link #interpreter}.
      */
@@ -311,6 +394,15 @@ public class URLActionDataValidation
     {
         return PERMITTEDVALIDATIONMODE.contains(s);
     }
+    
+	/**
+	 * @param subSelectionMode
+	 * @return if ({@link #selectionMode} is permitted) ? true : false.
+	 */
+	public boolean isPermittedSubSelectionMode(final String subSelectionMode)
+	{
+		return PERMITTEDSUBSELECTIONMODE.contains(subSelectionMode);
+	}
 
     /**
      * Dirty way of throwing a IllegalArgumentException with the passed message. 
@@ -371,28 +463,4 @@ public class URLActionDataValidation
                                                     this.name, tag);
         return message;
     }
-	/**
-	 * @return the subSelectionMode
-	 */
-	public String getSubSelectionMode() {
-		return subSelectionMode;
-	}
-	/**
-	 * @param subSelectionMode the subSelectionMode to set
-	 */
-	public void setSubSelectionMode(String subSelectionMode) {
-		this.subSelectionMode = subSelectionMode;
-	}
-	/**
-	 * @return the subSelectionValue
-	 */
-	public String getSubSelectionValue() {
-		return subSelectionValue;
-	}
-	/**
-	 * @param subSelectionValue the subSelectionValue to set
-	 */
-	public void setSubSelectionValue(String subSelectionValue) {
-		this.subSelectionValue = subSelectionValue;
-	}
 }
