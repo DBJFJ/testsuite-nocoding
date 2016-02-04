@@ -152,6 +152,9 @@ public class URLActionDataStore
 		System.err.println("\t\t\t" + this.selectionMode
 				+ " : "
 				+ this.selectionContent);
+		System.err.println("\t\t\t" + this.subSelectionMode
+				+ " : "
+				+ this.subSelectionValue);
 	}
 
 	/**
@@ -165,6 +168,9 @@ public class URLActionDataStore
 		System.err.println("\t\t\t" + getSelectionMode()
 				+ " : "
 				+ getSelectionContent());
+		System.err.println("\t\t\t" + getSubSelectionMode()
+				+ " : "
+				+ getSubSelectionContent());
 	}
 
 	/**
