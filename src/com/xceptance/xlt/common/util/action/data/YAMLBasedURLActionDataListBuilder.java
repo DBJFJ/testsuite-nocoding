@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.Nullable;
+import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import bsh.EvalError;
@@ -168,10 +170,18 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
     {
         final List<Object> dataList = loadDataFromFile();
         createActionList(dataList);
+                
+      try {
+    	  	dumpActionsYaml(actions, new File("/home/daniel/Desktop/dump.yml"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
         return this.actions;
     }
 
-    @SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
     private List<Object> loadDataFromFile()
     {
         List<Object> resultList = Collections.emptyList();
@@ -219,7 +229,7 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
         {
             ParameterUtils.isLinkedHashMapMessage(listObject,
                                                   "YAML - List",
-                                                  SEESPEC);
+                                                  SEESPEC);            
             final LinkedHashMap<String, Object> listItem = (LinkedHashMap<String, Object>) listObject;
             handleListItem(listItem);
         }
@@ -1088,13 +1098,24 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
         final String selectionContent = (String) entry.getValue();
         String validationMode = null;
         String validationContent = null;
-
-        if (it.hasNext())
+        String subSelectionMode = null;
+        String subSelectionContent = null;
+        
+        // deal with the subSelectionMode if it exists 
+        while (it.hasNext())
         {
             entry = (Map.Entry<?, ?>) it.next();
-            validationMode = entry.getKey().toString();
-            validationContent = entry.getValue().toString();
+            String key = entry.getKey().toString();
+            if (URLActionDataValidation.PERMITTEDVALIDATIONMODE.contains(key)) {
+            	validationMode = key;
+                validationContent = entry.getValue().toString();
+            }
+            else {
+            	subSelectionMode = key;
+            	subSelectionContent = entry.getValue().toString();
+            }
         }
+        
         if (validationMode == null)
         {
             validationMode = URLActionDataValidation.EXISTS;
@@ -1103,6 +1124,13 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
         validationBuilder.setValidationContent(validationContent);
         validationBuilder.setValidationMode(validationMode);
         validationBuilder.setSelectionContent(selectionContent);
+        
+        if(subSelectionMode != null)
+        {
+        	validationBuilder.setSubSelectionMode(subSelectionMode);
+        	validationBuilder.setSubSelectionContent(subSelectionContent);
+        }
+        
     }
 
     private void fillURLActionBuilderWithStoreData(final LinkedHashMap<String, Object> rawResponse)
@@ -1212,5 +1240,123 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 
     static private final String SEESPEC = "See " + SPECIFICATION
                                           + " for the correct Syntax!";
+    
+	/**
+	 * Dump the given list of {@link URLActionData) into the given file in yaml.
+	 * Uses snakeyaml ({@link #Yaml SnakeYaml}) for the dumping, and {@link #restructureActionListForDumping(List)} 
+	 * to bring the data into a format snakeyaml can use. <\br>
+	 * <\br>
+	 * Since the method is used in the {@link JMXBasedURLActionDataListBuilder} it doesn't support attributes 
+	 * that arn't supported in the {@link JMXBasedURLActionDataListBuilder}. The formatting doesn't quite match
+	 * the suggested format either. Attributes are included even if they are empty or null, the indention is odd 
+	 * at times especially with dashes and there's no whitespace in front of colons.
+	 *  
+	 * @param file 
+	 * @param actions 
+	 */
+	protected static void dumpActionsYaml(List<URLActionData> actions, File dumpThere) throws FileNotFoundException {
+		
+		PrintWriter printwriter = new PrintWriter(dumpThere);
+	
+	    DumperOptions dumperoptions = new DumperOptions();
+	    dumperoptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+	    dumperoptions.setIndent(4);    
+	    
+		Yaml yaml = new Yaml(dumperoptions);
+		List<Map<String, Object>> restructuredActionList = restructureActionListForDumping(actions);	
+		String s = yaml.dump(restructuredActionList);
+								
+		printwriter.print(s);
+		printwriter.close();
+	}
+	
+	/**
+	 * <p>
+	 * Takes a list of {@link URLActionData} and transforms it into a nested list full of 
+	 * {@link LinkedHashMap}s so the list can be processed and dumped with ({@link #Yaml SnakeYaml}). 
+	 * </p>
+	 * The method creates a horrible mix of nested {@link LinkedHashMap}s and {@link List}s, because that's what 
+	 * snakeyaml needs to create the correct syntax. Take a look at the yaml cheatsheet to get an idea of the 
+	 * intended result. For example validations in yaml look like this: 
+	 * <pre>
+	 * {@code
+	 * Validation:
+	 * 	- validationName
+	 * 		SelectionMode: SelectionContent
+	 * 		ValidationMode: ValidationContent
+	 * 	- validationName
+	 * 		...
+	 * }
+	 * </pre>
+	 * <p>
+	 * The blocks are maps and the blocks with a dash are lists. With {name=value, name=value} for a map and 
+	 * [value,value] for a list it comes down to: 
+	 * Validation=[{validationName={SelMode=SelContent, ValMode=ValContent}}, ...].
+	 * 
+	 * @param actions 
+	 *  
+	 */
+	private static List<Map<String, Object>> restructureActionListForDumping(List<URLActionData> actions) {
+		
+		List<Map<String, Object>> root = new ArrayList<>();
+		
+		// get the variables that should be stored seperately
+		// how access interpreter ...?
+		
+		// iterate over the actions
+		for (int i = 0; i < actions.size(); i++) {
+			URLActionData action = actions.get(i);
+			Map<String, Object> outerActionMap = new LinkedHashMap<String, Object>();
+			Map<String, Object> innerActionMap = new LinkedHashMap<String, Object>();
+			innerActionMap.put(NAME, action.getName());
+			
+			Map<String, Object> requestMap = new LinkedHashMap<String, Object>();
+			requestMap.put(URL, action.getUrlString());
+			requestMap.put(METHOD, action.getMethod().toString());
+			innerActionMap.put(REQUEST, requestMap);
+			
+			Map<String, Object> responseMap = new LinkedHashMap<String, Object>();
+			responseMap.put(HTTPCODE, action.getHttpResponseCode());
+			
+			// Validations ...			
+			List<Map<String, Object>> validationsList = new ArrayList<>();
+			
+			for (URLActionDataValidation validation : action.getValidations()) {
+				Map<String, Object> outerValidationMap = new LinkedHashMap<String, Object>();
+				Map<String, Object> innerValidationMap = new LinkedHashMap<String, Object>();
+				
+				innerValidationMap.put(validation.getSelectionMode(), validation.getSelectionContent());
+				innerValidationMap.put(validation.getSubSelectionMode(), validation.getSubSelectionContent());
+				innerValidationMap.put(validation.getValidationMode(), validation.getValidationContent());
+				
+				outerValidationMap.put(validation.getName(), innerValidationMap);
+				validationsList.add(outerValidationMap);
+			}
+			
+			responseMap.put(VALIDATION, validationsList);			
+			innerActionMap.put(RESPONSE, responseMap);
+			
+			// Store/ Extractions are performed analogous to validations
+			List<Map<String, Object>> storeVarsList = new ArrayList<>();
+			
+			for (URLActionDataStore store : action.getStore()) {
+				Map<String, Object> outerStoreMap = new LinkedHashMap<String, Object>();
+				Map<String, Object> innerStoreMap = new LinkedHashMap<String, Object>();
+				
+				innerStoreMap.put(store.getSelectionMode(), store.getSelectionContent());
+				innerStoreMap.put(store.getSubSelectionMode(), store.getSubSelectionContent());
+				
+				outerStoreMap.put(store.getName(), innerStoreMap);
+				storeVarsList.add(outerStoreMap);
+			}
+			
+			responseMap.put(STORE, storeVarsList);			
+			innerActionMap.put(RESPONSE, responseMap);
 
+			outerActionMap.put(ACTION, innerActionMap);
+			root.add(outerActionMap);
+		}
+		
+		return root; 
+	}
 }
