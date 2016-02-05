@@ -21,6 +21,7 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import bsh.EvalError;
+import bsh.Variable;
 
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
 import com.xceptance.xlt.api.util.XltLogger;
@@ -1246,20 +1247,20 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 	/**
 	 * Dump the given list of {@link URLActionData) into the given file in yaml.
 	 * Uses snakeyaml ({@link #Yaml SnakeYaml}) for the dumping, and {@link #restructureActionListForDumping(List)} 
-	 * to bring the data into a format snakeyaml can use. <\br>
-	 * <\br>
+	 * to bring the data into a format snakeyaml can use.
+	 * </br>
 	 * Since the method is used in the {@link JMXBasedURLActionDataListBuilder} it doesn't support attributes 
 	 * that arn't supported in the {@link JMXBasedURLActionDataListBuilder}. The formatting doesn't quite match
 	 * the suggested format either. Attributes are included even if they are empty or null, the indention is odd 
 	 * at times especially with dashes and there's no whitespace in front of colons.
-	 * <\br>
+	 * </br>
 	 * It also plain ignores variables the user defined outside of the actions at the moment,
 	 * since I have not found a (plausible) way to get them out of the ParameterInterpreter yet.
 	 *  
 	 * @param file 
 	 * @param actions 
 	 */
-	protected static void dumpActionsYaml(List<URLActionData> actions, Path dumpThere) throws FileNotFoundException {
+	public static void dumpActionsYaml(List<URLActionData> actions, Path dumpThere) throws FileNotFoundException {
 		
 		XltLogger.runTimeLogger.info("Writing Test Case to YAML file ...");
 		PrintWriter printwriter = new PrintWriter(dumpThere.toFile());
@@ -1271,7 +1272,7 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 		Yaml yaml = new Yaml(dumperoptions);
 		List<Map<String, Object>> restructuredActionList = restructureActionListForDumping(actions);	
 		String s = yaml.dump(restructuredActionList);
-								
+										
 		printwriter.print(s);
 		printwriter.close();
 		
@@ -1307,34 +1308,53 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 		
 		List<Map<String, Object>> root = new ArrayList<>();
 		
-		// get the variables that should be stored seperately
-		// but how to get them out of the interpreter
+		// get the variables to store out of the interpreter ...
+		LinkedHashMap<String, Object> storeMap = new LinkedHashMap<String, Object>();
+		List<Map<String, Object>> innerStoreList =  new ArrayList<>();
 		
+		// since they are all put together in the interpreter, somehow, just
+		// check the interpreter of the first action
+		ParameterInterpreter interpreter = actions.get(0).getInterpreter();
+		Variable[] variables = interpreter.getNameSpace().getDeclaredVariables();
+		for (Variable variable : variables) {
+			String name = variable.getName();
+			
+			// if it's not a default constant ...
+			if (name.toUpperCase() != name && name != "bsh") {
+				LinkedHashMap<String, Object> varMap = new LinkedHashMap<String, Object>();
+				String value = interpreter.processDynamicData("${" + name +"}");
+				putUnlessEmpty(varMap, name, (Object) value);
+				addUnlessEmpty(innerStoreList, varMap);
+			}
+		}
+		putUnlessEmpty(storeMap, STORE, (Object) innerStoreList);
+		root.add(storeMap);
+
 		// iterate over the actions
 		for (int i = 0; i < actions.size(); i++) {
 			URLActionData action = actions.get(i);
-			Map<String, Object> outerActionMap = new LinkedHashMap<String, Object>();
-			Map<String, Object> innerActionMap = new LinkedHashMap<String, Object>();
+			LinkedHashMap<String, Object> outerActionMap = new LinkedHashMap<String, Object>();
+			LinkedHashMap<String, Object> innerActionMap = new LinkedHashMap<String, Object>();
 			innerActionMap.put(NAME, action.getName());
 			
-			Map<String, Object> requestMap = new LinkedHashMap<String, Object>();
+			LinkedHashMap<String, Object> requestMap = new LinkedHashMap<String, Object>();
 			requestMap.put(URL, action.getUrlString());
 			requestMap.put(METHOD, action.getMethod().toString());
 			innerActionMap.put(REQUEST, requestMap);
 			
-			Map<String, Object> responseMap = new LinkedHashMap<String, Object>();
+			LinkedHashMap<String, Object> responseMap = new LinkedHashMap<String, Object>();
 			responseMap.put(HTTPCODE, action.getHttpResponseCode());
 			
 			// Validations ...			
 			List<Map<String, Object>> validationsList = new ArrayList<>();
 			
 			for (URLActionDataValidation validation : action.getValidations()) {
-				Map<String, Object> outerValidationMap = new LinkedHashMap<String, Object>();
-				Map<String, Object> innerValidationMap = new LinkedHashMap<String, Object>();
+				LinkedHashMap<String, Object> outerValidationMap = new LinkedHashMap<String, Object>();
+				LinkedHashMap<String, Object> innerValidationMap = new LinkedHashMap<String, Object>();
 				
 				innerValidationMap.put(validation.getSelectionMode(), validation.getSelectionContent());
-				innerValidationMap.put(validation.getSubSelectionMode(), validation.getSubSelectionContent());
-				innerValidationMap.put(validation.getValidationMode(), validation.getValidationContent());
+				putUnlessEmpty(innerValidationMap, validation.getSubSelectionMode(), validation.getSubSelectionContent());
+				putUnlessEmpty(innerValidationMap, validation.getValidationMode(), validation.getValidationContent());
 				
 				outerValidationMap.put(validation.getName(), innerValidationMap);
 				validationsList.add(outerValidationMap);
@@ -1347,8 +1367,8 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 			List<Map<String, Object>> storeVarsList = new ArrayList<>();
 			
 			for (URLActionDataStore store : action.getStore()) {
-				Map<String, Object> outerStoreMap = new LinkedHashMap<String, Object>();
-				Map<String, Object> innerStoreMap = new LinkedHashMap<String, Object>();
+				LinkedHashMap<String, Object> outerStoreMap = new LinkedHashMap<String, Object>();
+				LinkedHashMap<String, Object> innerStoreMap = new LinkedHashMap<String, Object>();
 				
 				innerStoreMap.put(store.getSelectionMode(), store.getSelectionContent());
 				innerStoreMap.put(store.getSubSelectionMode(), store.getSubSelectionContent());
@@ -1363,7 +1383,55 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
 			outerActionMap.put(ACTION, innerActionMap);
 			root.add(outerActionMap);
 		}
-		
 		return root; 
 	}
+	
+	/**
+	 * The usual put method except it checks if the key or the object to put in are empty 
+	 * or null or the key is "null" before putting. If they are, it doesn't put and just
+	 * returns the given map. Also logs a debug message if the object is null while the 
+	 * key isn't. 
+	 * 
+	 * @param map
+	 * @param key
+	 * @param value
+	 * @return
+	 */
+	private static LinkedHashMap<String, Object> putUnlessEmpty(LinkedHashMap<String, Object> map, 
+								String key, Object value) {
+		
+		if (key == null || key.equals("null")) {
+			return map;
+		}
+		
+		if (value == null) {
+			XltLogger.runTimeLogger.debug(key + " is empty or null");
+			return map;
+		}
+		
+		map.put(key, value);
+		return map;
+	}
+	
+	
+	/**
+	 * The usual add method except it checks if the object to add in are empty 
+	 * or null or the key is "null" before putting. If they are, it doesn't put and just
+	 * returns the given list. 
+	 * 
+	 * @param map
+	 * @param key
+	 * @param value
+	 * @return
+	 */
+	private static List<Map<String, Object>> addUnlessEmpty(List<Map<String, Object>> list, 
+									Map<String, Object> map) {
+		if (map == null || map.isEmpty()) {
+			return list;
+		}
+
+		list.add(map);
+		return list;
+	}
+	
 }
