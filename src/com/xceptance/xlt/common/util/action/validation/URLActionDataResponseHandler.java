@@ -78,8 +78,8 @@ public class URLActionDataResponseHandler
                                 final URLActionDataExecutableResult result)
     {
         validateResponseCode(action, result);
-        handleValidations(action, result);
         handleStore(action, result);
+        handleValidations(action, result);
     }
 
     private void handleStore(final URLActionData action,
