@@ -1,26 +1,25 @@
 # Jmeter to TSNC Translation
 
-TSNC can recognize test files created with Jmeter and execute them.
+TSNC can recognize test a file created with Jmeter, execute it and convert it into the YAML test files TSNC usually uses. <TO_FINISH> 
 
 While TSNC and Jmeter are both test tools, they concentrate on different areas and work in different ways. TSNC is a small test tool focused on calling urls, validating results and showing the results. Jmeter is a large load testing tool with a much wider set of functions working in a different way. As a result, not all Jmeter tests can be translated to TSNC.
 
-Load Test configurations and Listeners will be ignored since TSNC uses it's own properties and result browsers.
+Load Test configurations and Listeners will be ignored since TSNC uses it's own properties and result browsers. The Thread Groups are executed one after the other, not in parallel. Each Thread Group is translated to a seperate test file. 
 
 ### Generally speaking, TSNC will translate tests following this structure: 
 
 * Thread Group
     * (Variable Declaration)
     * HTTP Request Sampler
-        * XPath Extractions
+        * XPath RegEx Extractions
         * Response Assertions
     * (Variable Declaration)
     * HTTP Request Sampler
-        * XPath Extractions
+        * XPath/RegEx Extractions
         * Response Assertions 
+* Thread Group ...
  
-If the Jmeter test does not follow this structure and/ or includes other important elements it won't run on TSNC.  
-Logic elements like if or loops don't have an aquivalent in TSNC and will be ignored. Extractors other then XPath Extractors won't be translated. Assertions other then Response Assertions won't be translated. Requests/ Samplers other then Http Requests won't be translated. Beanshell and JDBC connections won't be translated. There are also some minor differences in the Response Assertions/ the XPath Extractions.  
-Explanations and details for specific elements can be found below.
+If the Jmeter test does not follow this structure it may not run correctly on TSNC. Other elements are ignored.  
  
 #### Config Elements
 
@@ -29,30 +28,30 @@ The default protocol (http/ https) and the default headers from Jmeter are trans
 
 #### Variables
 
-Variables are read with name and value as usual.Variables can be defined inside the Thread Group or inside an Http Request (not in an XPath Extractor). They can be overwritten. 
-Jmeter variables are made to hold practically everything. TSNC variables are only made to hold Strings. 
+Variables are read with name and value as usual. Variables can be defined inside the Thread Group or inside an Http Request (not in an Extractor). They can be overwritten in later Actions/ Http Requests. 
+Another difference is that Jmeter variables are made to hold practically everything. TSNC variables are only made to hold Strings.  
 
 #### Http Requests
 
-Http Request Samplers are translated into TSNC actions and executed with name, protocol, url, method and parameters. 
+Http Request Samplers are translated into TSNC actions and executed with name, protocol, url, path, method and parameters. Redirects won't be followed.
 
 ### Extractions and Assertions
 
-Extractors and Assertions in Jmeter are more strictly divided then in TSNC. Where Jmeter often extracts a variable to validate it afterwards TSNC does so in the same motion. The division between extractions and assertions isn't as clear in TSNC. As a sideeffect every TSNC extraction at least asserts that the object it is looking for exists. There is no default value like in Jmeter, the extractor will throw an error. Assertions essentially always extract and assert a something, it just so happens that they can extract everything from a variable.
+Extractors and Assertions in Jmeter are more strictly divided then in TSNC. Where Jmeter often extracts a variable to validate it afterwards TSNC does so in the same motion. The division between extractions and assertions isn't as clear in TSNC. As a sideeffect every TSNC extraction at least asserts that the object it is looking for exists. There is no default value like in Jmeter, the extractor will throw an error. Assertions essentially always extract and assert something too, they just don't save the extraction.
 
 ###### XPath Extractions
 
-XPath extractions are read with name and XPath. The big difference is that in TSNC, an extraction will always result in an error if it didn't find anything. That remains the case with extractions read from Jmeter. If the extractor doesn't find anything, there will be an error. There are some other comparatively small differences
-* the extractor can't be used on variables
+XPath extractions are read with name and XPath. The big difference is that in TSNC, an extraction will always result in an error if it didn't find anything. That remains the case with extractions read from Jmeter. If the extractor doesn't find anything, there will be an error. There are some other comparatively small differences:
+
 * the difference between 'Main sample and sub-samples', 'Main sample only' and 'Sub-samples only' is ignored, they are all mapped to the resulting web page
 * 'Use Tidy', 'Quiet', 'Report errors' and 'Show warnings' don't work.
+* the extractor can't be used on variables
 
 ###### Regular Expression Extractions
 
-While TSNC and Jmeter both use Regular Expression Extractors, they work in slightly different ways. The regular expression in Jmeter contains a set of round brackets and everything in these brackets is extracted.
-For example: A regex extractor with *This is a great example(.\*?)?* used on the String *This is a great example, isn't it? Yes it is.* would extract *, isn't it*.
-A regex extractor in TSNC extracts the whole expression. Using the same values it would extract *This is a great example, isn't it?*.  
-**There is no workaround yet and so regular expression extractions can't be translated yet.** 
+While TSNC and Jmeter both use Regular Expression Extractors, they work in somewhat different ways.  Let's match a regular expression of "Re(.+?)gu(.+?)s(.+?)sion" as an example. In Jmeter you can decide if you want the first match, the second match, a random match or whichever match you'd like. You can also choose which bracket groups to extract and reorder them with a template like "$3$$1$$2$".
+
+TSNC will always extract only one group. If TSNC detects a template it can't wholy match, like the aforementioned "$3$$1$$2$", it will only extract the first group, $3$ and log a warning. Likewise TSNC will always extract from the first match. If it should extract from a random one it will log a warning and extract from the first. If it should extract from the second, third or another later match, it will log an error and skip that extraction. <TODO_&_REALLY?>
 
 #### Response Assertions
 
@@ -62,6 +61,7 @@ Response Assertions can usually be translated to TSNC, but some functions again 
 * 'URL Sampled' isn't mapped
 * both 'Text Response' and 'Document (Text)' are mapped to the response body
 * the difference between 'Main sample and sub-samples', 'Main sample only' and 'Sub-samples only' is ignored, they are all mapped to the resulting web page
+* "%20" is automatically translated to a whitespace when used for a validation in Jmeter. But not in TSNC. Tests in which a variable is first used as a parameter, thus requiring %20, and later used for a validation will almost certainly fail. <What_TO_DO?>
 
 TSNC also adds a default HttpResponseCode=200 validation to every action, so redirections will cause errors unless an assertion for the expected response code was manually defined. 
 
