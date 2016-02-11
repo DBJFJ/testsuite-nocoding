@@ -1,0 +1,46 @@
+- Store : 
+    - var1 : var2content
+    - somewhere : cepta
+    
+- Action : 
+    Name : something test
+    Request : 
+        Url : https://blazemeter.com
+        Method : GET
+        Parameters : 
+            - parameter_1 : value_1         
+            - parameter 2 : value_2
+        Headers :                                      
+            - header_1 : value_1
+            - header_2 : value_2
+    Response :
+        Httpcode : 200
+        Store :
+            - asdfghjkl : 
+                Regex : content=(.+?)test  
+                Group : 1   
+        Validate : 
+            - validate with stored variable :
+                Var : ${asdfghjkl}
+                Matches : \"BlazeMeter offers a cross-enterprise 
+            - validate with group :
+                Regex : co(nt)ent=(.+?)test  
+                Group: 2 
+                Matches : \"BlazeMeter offers a cross-enterprise
+            - validate without group :
+                Regex : content=(.+?)test  
+                Matches : \"BlazeMeter offers a cross-enterprise
+            - validate exists :
+                Regex : content=(.+?)test  
+- Action :
+    Name : xpath test
+    Request :
+        Url : https://www.xceptance.com/en/    
+        Method : GET
+    Response : 
+        Validate : 
+            - validate xpath :
+                XPath : /html/body/div[4]/div[1]/div[2]/div/div[2]/div/div/a[1]/i
+        Store :  
+            - xpathtest : 
+                XPath : /html/body/div[4]/div[1]/div[2]/div/div[2]/div/div/a[1]/i

@@ -1,0 +1,5 @@
+- Action :
+    Name : simple
+    Request :
+         Url : https://www.xceptance.com/en/    
+         Method : GET
