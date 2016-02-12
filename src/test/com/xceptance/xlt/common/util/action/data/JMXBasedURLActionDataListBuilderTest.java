@@ -86,22 +86,24 @@ public class JMXBasedURLActionDataListBuilderTest {
 	
 	String[][] validationModeExpected = {
 			
-			// action 1
+			// action 0
 			{URLActionDataValidation.TEXT, URLActionDataValidation.MATCHES,
 				URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS},	
 			
+			// action 1
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES},					
+			
 			// action 2
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS},					
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES,
+				URLActionDataValidation.MATCHES},			
 			
-			// action 3
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS,
-				URLActionDataValidation.EXISTS},			
-			
-			// and so on
+			// and so on ...
 			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
-					URLActionDataValidation.EXISTS},		
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
-						URLActionDataValidation.EXISTS},			
+					URLActionDataValidation.EXISTS},
+					
+			{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES, 
+						URLActionDataValidation.MATCHES},	
+						
 			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
 							URLActionDataValidation.EXISTS}			
 	};
@@ -425,6 +427,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 				Assert.assertEquals(selectionContentExpected[iAction][iValidation], selectionContent);
 				
 				// assert validationMode
+				System.out.println("Action: " + iAction + ", " + validation.getName());
 				Assert.assertEquals(validationModeExpected[iAction][iValidation], validationMode);
 				
 				// assert validationContent
@@ -500,21 +503,35 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 * match. TODO expand. 
 	 */
 	@Test
-	public void testRegexExpractions() {
+	public void testRegexExtractions() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath3, 
 				interpreter, actionBuilder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
-		URLActionData action = actions.get(0);
-		URLActionDataStore store = action.getStore().get(0);
 		
-		String subSelectionModeExpected = URLActionDataStore.REGEXGROUP;
-		String subSelectionContentExpected = "1"; 
+		String subSelectionModeExpected[] = {
+				URLActionDataStore.REGEXGROUP, null, URLActionDataStore.REGEXGROUP
+		};
+		String subSelectionContentExpected[] = {
+				"2", null, "1" 
+		};
 		
-		String subSelectionModeActual = store.getSubSelectionMode();
-		String subSelectionContentActual = store.getSubSelectionContent();
+		// test if subSelectionMode/-Value are read correctly (action 0),
+		// if subSelectionMode/-Value are left out when they should be (action 1)
+		// and if correct default values are set for subSelectioMode and /-Value (action 2= 
 		
-		Assert.assertEquals(subSelectionModeExpected, subSelectionModeActual);
-		Assert.assertEquals(subSelectionContentExpected, subSelectionContentActual);
+		for (int i = 0; i < actions.size(); i++) {
+			URLActionData action = actions.get(i);
+			URLActionDataStore store = action.getStore().get(0);
+			
+			String subSelectionModeActual = store.getSubSelectionMode();
+			String subSelectionContentActual = store.getSubSelectionContent();
+			
+			Assert.assertEquals(subSelectionModeExpected[i], subSelectionModeActual);
+			Assert.assertEquals(subSelectionContentExpected[i], subSelectionContentActual);
+
+		}
+		
+		// TODO add test for impossible values
 	}
 	/**
 	 * Mainly just here for development. TODO

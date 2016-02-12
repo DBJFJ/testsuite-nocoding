@@ -1408,26 +1408,43 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				}
 				case ATTRV_REGEX_EXT_GROUP: {
 					event = reader.nextEvent();
-					group = getTagContent(event);
+					
+					if (event.isCharacters()) {
+						group = getTagContent(event);
+					}
+					else {
+						// set the default = 1;
+						group = "$1$";
+					}
 					break;
 				}
 				case ATTRV_REGEX_EXT_MATCH: {
 					event = reader.nextEvent();
-					int match = Integer.parseInt(getTagContent(event));
+					
+					if (event.isCharacters()) {
+						int match = Integer.parseInt(getTagContent(event));
 
-					// the match specifies from which match to extract
-					// since TSNC always extracts from the first match it
-					// logs a warning at "random" (=0) and an error at 2,3,4 ...
-					if (match == 0) {
-						XltLogger.runTimeLogger.warn("Regex Extractor " + name +
-							" should extract from a random match. That is impossible in " +
-							"TSNC. It will extract from the first match instead.");
+						// the match specifies from which match to extract
+						// since TSNC always extracts from the first match it
+						// logs a warning at "random" (=0) and an error at 2,3,4 ...
+						if (match == 0) {
+							XltLogger.runTimeLogger.warn("Regex Extractor " + name +
+									" should extract from a random match. That is impossible in " +
+									"TSNC. It will extract from the first match instead.");
+						}
+						if (1 < match) {
+							XltLogger.runTimeLogger.error("Regex Extractor " + name +
+									" should extract from a later match. Since TSNC always extracts from " +
+									"the first match, that is impossible.");
+							// TODO extract from the first match anyway or break everything off ?
+						}
 					}
-					if (1 < match) {
-						XltLogger.runTimeLogger.error("Regex Extractor " + name +
-							" should extract from a later match. Since TSNC always extracts from " +
-							"the first match, that is impossible.");
-						// TODO extract from the first match anyway or break everything off ?
+					 
+					else {
+						// no match was set, log a warning and use the first match
+						// not like TSNC can do anything else
+						XltLogger.runTimeLogger.warn("No match was set for Regex Extractor " + name + "." +
+								"Extracting from first match ... ");
 					}
 				}
 
