@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
@@ -153,6 +154,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	
 	private final String ATTRV_ACTION_URL = "HTTPSampler.domain";
 	
+	private final String ATTRV_ACTION_URL_PATH = "HTTPSampler.path";
+	
 	private final String ATTRV_ACTION_METHOD = "HTTPSampler.method";
 	
 	private final String ATTRV_ELE_ISPARAM = "HTTPArgument";
@@ -190,6 +193,10 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String ATTRV_REGEX_EXT_REFNAME = "RegexExtractor.refname";
 	
 	private final String ATTRV_REGEX_EXT_REGEX = "RegexExtractor.regex";
+	
+	private final String ATTRV_REGEX_EXT_GROUP = "RegexExtractor.template";
+	
+	private final String ATTRV_REGEX_EXT_MATCH = "RegexExtractor.match_number";
 	
 	
 	/*
@@ -272,9 +279,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 						List<URLActionData> testCase = readThreadGroup(reader);
 						
 						// dump it into a yaml file
-						Path dumpFile = Paths.get("./config/data" + name + ".yml");
+						Path dumpFile = Paths.get("./config/data/" + name + ".yml");
 						try {
-							YAMLBasedURLActionDataListBuilder.dumpActionsYaml(testCase,	dumpFile);
+							YAMLBasedDumper.dumpActionsYaml(testCase,	dumpFile);
 						} catch (FileNotFoundException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -650,6 +657,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		
 		String protocol = defaultProtocol;
 		String url = null;
+		String path = null;
 		
 		// set the testname and the interpreter
 		actionBuilder.setName(testName);
@@ -688,13 +696,25 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					}
 					break;
 				case ATTRV_ACTION_URL: {
-					// read the content
+					// read the url
 					event = reader.nextEvent();
 					url = event.asCharacters().getData();
 					break;
 				}
+				case ATTRV_ACTION_URL_PATH: {
+					// read the path. The path is added to the end of the URL.
+					// Example: url=www.otto.de,  path: /herrenmode/
+					event = reader.nextEvent();
+					if (event.isCharacters()) {
+						path = event.asCharacters().getData();
+					}
+					else {
+						path = "";
+					}
+					break;
+				}
 				case ATTRV_ACTION_METHOD: {
-					// read the content
+					// read the method
 					event = reader.nextEvent();
 					String content = event.asCharacters().getData();
 					actionBuilder.setMethod(content);
@@ -712,13 +732,13 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			}
 		}
 		
-		// add protocol and url together, set the url
+		// add protocol, url and path together, set the url
 		
 		// set the protocol to http if it wasn't specified yet
 		if (protocol == null) {
 			protocol = "http";
 		}
-		url = protocol + "://" + url;
+		url = protocol + "://" + url + path;
 		actionBuilder.setUrl(url);
 		
 		readActionContent(reader, interpreter, actionBuilder);
@@ -867,7 +887,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 							actionBuilder.getName() + "...");
 		
 		List<URLActionDataValidation> validations = new ArrayList<URLActionDataValidation>();	
-		List<URLActionDataStore> variablesToExtract = new ArrayList<URLActionDataStore>();
+		List<URLActionDataStore> storeList = new ArrayList<URLActionDataStore>();
 		URLActionDataStoreBuilder storeBuilder = new URLActionDataStoreBuilder();
 		
 
@@ -926,10 +946,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// read the XPathExtractor
 					storeBuilder.setInterpreter(interpreter);
 					storeBuilder.setSelectionMode(URLActionDataStore.XPATH);
-					URLActionDataStore variableToExtract = readXPathExtractor(reader, storeBuilder);
-					if (variableToExtract != null) {
-						variablesToExtract.add(variableToExtract);
-					}
+					URLActionDataStore store = readXPathExtractor(reader, storeBuilder);
+				
+					storeList.add(store);
 					storeBuilder.reset();
 					break;
 				}
@@ -938,14 +957,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// read regexExtractor
 					String selectionMode = URLActionDataStore.REGEXP;
 					storeBuilder.setInterpreter(interpreter);
-					URLActionDataStore variableToExtract = readRegexExtractor(selectionMode, 
+					URLActionDataStore store = readRegexExtractor(selectionMode, 
 							reader, storeBuilder);
-					if (variableToExtract != null) {
-						variablesToExtract.add(variableToExtract);
-					}
+
+					storeList.add(store);
 					storeBuilder.reset();
-					
-					XltLogger.runTimeLogger.debug("Reading RegexExtractor ..." );
 					break;
 				}
 				case TNAME_HEADERS: {
@@ -965,8 +981,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		if (validations.size() > 0) {
 			actionBuilder.setValidations(validations);
 		}
-		if (variablesToExtract.size() > 0) {
-			actionBuilder.setStore(variablesToExtract);
+		if (storeList.size() > 0) {
+			actionBuilder.setStore(storeList);
 		}
 	}
 	
@@ -1314,23 +1330,31 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		
 		storeBuilder.setName(name);
 		storeBuilder.setSelectionContent(selectionContent);
-		URLActionDataStore varToExtract = storeBuilder.build();
-		return varToExtract;
+		URLActionDataStore store = storeBuilder.build();
+		return store;
 	}
 
 	/**
 	 * Should be called when the {@link #readActionContent} method comes upon a 
-	 * {@link TNAME_REGEX_EXTACT} tag. Reads until the end of the {@link TNAME_REGEX_EXTACT} tag and 
+	 * {@link TNAME_REGEX_EXTRACT} tag. Reads until the end of the {@link TNAME_REGEX_EXTRACT} tag and 
 	 * returns an URLActionDataStore object. </br>
 	 * 
-	 * <p>In Jmeter the extractor extracts everything inside the parentheses of the regular expression.
-	 * ( and ) - the round brackets enclose the portion of the match string to be returned. TSNC can do the 
-	 * same. However there are differences if there is more then one match. Jmeter would return every match,
-	 * TSNC only returns one. <\br>
-	 * The way it's written, the first match is returned.
+	 * <p>
+	 * In Jmeter one can specify which match to extract, which groups inside that match and in which order.
+	 * Example: </br>
+	 * RegEx: |Reg (.+?) r Ex (.+?) es (.+?) on| </br>
+	 * Text: |Reg 11 r Ex 12 es 13 on|  |Reg 21 r Ex 22 es 23 on|  |Reg 31 r Ex 32 es 33 on| </br>
+	 * A template (=group) could be $2$$1$. In that case, it would extract everything in the second group
+	 * followed by everything in the first group --> 1211. That is not possible in TSNC. If more then one
+	 * value should be extracted, TSNC will log a warning and extract only the first one. </br>
 	 * </p>
 	 * <p>
-	 * Actually, it can be specified which group should be returned. But that isn't implemented yet TODO
+	 * Similarly it is possible to specify in Jmeter if the group from the first, second or third match 
+	 * should extracted. <br> 
+	 * Example: Template: $2$, Match: 2 --> 22 </br>
+	 * That option doesn't exist here, TSNC will always extract from the first match. If it should extract 
+	 * from another, it will log an error and skip the regular expression extractor. 
+	 * If it should extract from a random match (Match=0), it log a warning and extract from the first one. 
 	 * </p>
 	 * 
 	 * @param selectionMode
@@ -1341,10 +1365,12 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 */
 	private URLActionDataStore readRegexExtractor(String selectionMode, 
 			XMLEventReader reader, URLActionDataStoreBuilder storeBuilder) throws XMLStreamException {
-				
-		String GROUP_NMB = "1";
+					
+		String group = null;
 		String name = null;
 		String selectionContent = null;
+		String subSelectionMode = null;
+		String subSelectionContent = null;
 		
 		// loop until the loop is closed with an EndElement with the tag name 
 		// all parameters should be inside a single  tag
@@ -1378,8 +1404,31 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				case ATTRV_REGEX_EXT_REGEX: {
 					event = reader.nextEvent();
 					selectionContent = getTagContent(event);
-					
 					break;
+				}
+				case ATTRV_REGEX_EXT_GROUP: {
+					event = reader.nextEvent();
+					group = getTagContent(event);
+					break;
+				}
+				case ATTRV_REGEX_EXT_MATCH: {
+					event = reader.nextEvent();
+					int match = Integer.parseInt(getTagContent(event));
+
+					// the match specifies from which match to extract
+					// since TSNC always extracts from the first match it
+					// logs a warning at "random" (=0) and an error at 2,3,4 ...
+					if (match == 0) {
+						XltLogger.runTimeLogger.warn("Regex Extractor " + name +
+							" should extract from a random match. That is impossible in " +
+							"TSNC. It will extract from the first match instead.");
+					}
+					if (1 < match) {
+						XltLogger.runTimeLogger.error("Regex Extractor " + name +
+							" should extract from a later match. Since TSNC always extracts from " +
+							"the first match, that is impossible.");
+						// TODO extract from the first match anyway or break everything off ?
+					}
 				}
 
 				default: {
@@ -1389,16 +1438,41 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			}
 		}
 		
+		// check which bracket group should be extracted ...
+		if (group == null || group.isEmpty()) {
+			// this should never happen. But here could be an errorcheck in case the Jmeter 
+			// test case was faulty 
+		} 
+		else {
+			
+			// if multiple groups should be should be extracted, log a warning and
+			// just extract the first one
+			String templates[] = group.split(Pattern.quote("$$"));
+			if (templates.length > 1) {
+				XltLogger.runTimeLogger.warn("The regex extractor " + name + "intends to extract " +
+						"multiple groups. That is currently not possible on TSNC. Only the first " +
+						"group will be extracted.");
+			}
+
+			group = templates[0];
+			group = group.replace("$", "");
+
+			if (Integer.parseInt(group) != 0) {
+				
+				// set the subSelectionMode 
+				subSelectionMode = URLActionDataStore.REGEXGROUP;
+				subSelectionContent = group;
+		
+			} 
+		}
+		
 		storeBuilder.setName(name);
 		storeBuilder.setSelectionMode(selectionMode);
 		storeBuilder.setSelectionContent(selectionContent);
-		
-		// return whatever was in the round brackets in the first match
-		storeBuilder.setSubSelectionMode(URLActionDataStore.REGEXGROUP);
-		storeBuilder.setSubSelectionContent(GROUP_NMB);
-		
-		URLActionDataStore varToExtract = storeBuilder.build();
-		return varToExtract;
+		storeBuilder.setSubSelectionMode(subSelectionMode);
+		storeBuilder.setSubSelectionContent(subSelectionContent);
+		URLActionDataStore store = storeBuilder.build();
+		return store;
 	}
 
 	
@@ -1452,11 +1526,12 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 	
 	/**
-	 * Gets the content of a tag, it <tag>CONTENT</tag>. As a String. </br>
+	 * Gets the content of a tag, for example: {@code<tag>content<tag>} --> "content". 
+	 * Will log a warning if the tag was empty: {@code<tag></tag>} --> log warning and return warning.</br>
 	 * Convenience method.
 	 * 
 	 * @param event the character event aquivalent to the content of the tag
-	 * @return said event as a string
+	 * @return said event as a string. If there was no content, return the warning as a string.
 	 */
 	private String getTagContent(XMLEvent event) {
 		if (event.isCharacters()) {
@@ -1467,7 +1542,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		else {
 			// this really shoudn't happen
 			String warning = "An unexpected error occured during the Jmeter -> TSNC conversion." +
-							"tried to get tag content when none was there";
+							"tried to get a tags content when none was there";
 	        XltLogger.runTimeLogger.warn(warning);
 	        return warning;
 		}
