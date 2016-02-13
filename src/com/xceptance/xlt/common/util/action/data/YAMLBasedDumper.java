@@ -1,6 +1,6 @@
 package com.xceptance.xlt.common.util.action.data;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -18,8 +18,6 @@ import bsh.Variable;
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
 import com.xceptance.xlt.api.util.XltLogger;
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
-
-import com.xceptance.xlt.common.util.action.data.YAMLBasedURLActionDataListBuilder;
 
 
 /**
@@ -55,14 +53,20 @@ public class YAMLBasedDumper {
 	 *  
 	 * @param file 
 	 * @param actions 
+	 * @throws IOException 
 	 */
-	public static void dumpActionsYaml(List<URLActionData> actions, Path dumpThere) throws FileNotFoundException {
+	public static void dumpActionsYaml(List<URLActionData> actions, Path dumpThere) throws IOException {
 		
 		XltLogger.runTimeLogger.info("Writing Test Case to YAML file ...");
 		
 		if (Files.exists(dumpThere, LinkOption.NOFOLLOW_LINKS)) {
 			XltLogger.runTimeLogger.info(dumpThere.toString() + " already exists. " +
 					"Overwriting ...");
+		}
+		
+		Files.createDirectories(dumpThere.getParent());
+		if (!Files.exists(dumpThere, LinkOption.NOFOLLOW_LINKS)) {
+			Files.createFile(dumpThere);
 		}
 		PrintWriter printwriter = new PrintWriter(dumpThere.toFile());
 	
@@ -104,7 +108,6 @@ public class YAMLBasedDumper {
 	 * [value,value] for a list it comes down to: 
 	 * Validation=[{validationName={SelMode=SelContent, ValMode=ValContent}}, ...].
 	 * 
-	 * TODO add Parameters and Headers and default Protocol and default Headers and 
 	 * @param actions 
 	 *  
 	 */
