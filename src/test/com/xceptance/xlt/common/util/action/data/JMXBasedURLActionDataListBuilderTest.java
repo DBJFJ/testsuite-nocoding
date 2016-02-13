@@ -1,13 +1,17 @@
 package test.com.xceptance.xlt.common.util.action.data;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Paths;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.yaml.snakeyaml.Yaml;
 
 import bsh.EvalError;
 import bsh.Interpreter;
@@ -16,6 +20,7 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
 import com.xceptance.xlt.api.data.GeneralDataProvider;
 import com.xceptance.xlt.api.util.XltProperties;
 import com.xceptance.xlt.common.util.action.data.JMXBasedURLActionDataListBuilder;
+import com.xceptance.xlt.common.util.action.data.JMXBasedURLActionDataListBuilder.MappingException;
 import com.xceptance.xlt.common.util.action.data.URLActionData;
 import com.xceptance.xlt.common.util.action.data.URLActionDataBuilder;
 import com.xceptance.xlt.common.util.action.data.URLActionDataStore;
@@ -37,13 +42,17 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  */
 public class JMXBasedURLActionDataListBuilderTest {
 
-	private final String path = "./config/data/test/";
+	private final static String path = "./config/data/test/";
+	
 	private final String filePath1 = path + "TSearchDidYouMean.jmx";
 	private final String filePath2 = path + "HTTP Request.jmx";
 	private final String filePath3 = path + "regex.jmx";
+	private final String filePath4 = path + "regexImp.jmx";
 	private final String stringNotExistingFile = "notExistingFile";
     private final String fileEmptyFile = path + "emptyFile.yml";
 	
+    private static String tmpDumpFolder = path + "tmp";
+    
 	private XltProperties properties = XltProperties.getInstance();
 	private GeneralDataProvider dataProvider = GeneralDataProvider.getInstance();
 	
@@ -133,21 +142,30 @@ public class JMXBasedURLActionDataListBuilderTest {
 							"<div class=\"results-hits\""}			
 	};		
 
+	@BeforeClass
+	public static void ensureTmpFolderNotExists() {
+		while (new File(tmpDumpFolder).isDirectory()) {
+			tmpDumpFolder = tmpDumpFolder + "t";
+		}
+	}
+	
     @Test
     public void testCorrectConstructor()
     {
-
-    	
         @SuppressWarnings("unused")
-		final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
-				filePath1, this.interpreter, actionBuilder);
+		final JMXBasedURLActionDataListBuilder listBuilder1 = new JMXBasedURLActionDataListBuilder(
+				filePath1, this.interpreter, actionBuilder, tmpDumpFolder);
+        
+        @SuppressWarnings("unused")
+     		final JMXBasedURLActionDataListBuilder listBuilder2 = new JMXBasedURLActionDataListBuilder(
+     				filePath1, this.interpreter, actionBuilder);
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void testOutputForUnExistingFile()
     {
         final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
-        		this.stringNotExistingFile, this.interpreter, this.actionBuilder);
+        		this.stringNotExistingFile, this.interpreter, this.actionBuilder, tmpDumpFolder);
         
         final List<URLActionData> actions = listBuilder.buildURLActionDataList();
         Assert.assertTrue(actions.isEmpty());
@@ -157,9 +175,27 @@ public class JMXBasedURLActionDataListBuilderTest {
     public void testOutputForEmptyFile()
     {
         final JMXBasedURLActionDataListBuilder listBuilder = new JMXBasedURLActionDataListBuilder(
-        		this.fileEmptyFile, this.interpreter, this.actionBuilder);
+        		this.fileEmptyFile, this.interpreter, this.actionBuilder, tmpDumpFolder);
         final List<URLActionData> actions = listBuilder.buildURLActionDataList();
         Assert.assertTrue(actions.isEmpty());
+    }
+    
+    /**
+     * Tests if a two files with the same name as the Thread Groups in the Jmeter
+     * test plan were dumped.
+     * TODO maybe check if their content is correct too. This is a rather rudimentary check.
+     */
+    @Test
+    public void dumpToYaml() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
+				interpreter, actionBuilder, tmpDumpFolder);
+		jmxBasedBuilder.buildURLActionDataList();
+		
+		String[] expectedNames = {"Thread Group1", "Thread Group2"};
+		
+		for (String name : expectedNames) {
+			Files.exists(Paths.get(tmpDumpFolder + name), LinkOption.NOFOLLOW_LINKS);
+		}
     }
 	
 	/**
@@ -173,12 +209,12 @@ public class JMXBasedURLActionDataListBuilderTest {
 	public void testActions() {
 	
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
-				interpreter, actionBuilder);
+				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		// check the number of actions 
 		int numberOfActions = actions.size();
-		Assert.assertEquals(6, numberOfActions);
+		Assert.assertEquals(7, numberOfActions);
 		
 		// check if the names of the actions are as expected
 		String[] namesExpected = {
@@ -266,7 +302,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	@Test
 	public void testHeaders() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(
-				filePath1, interpreter, actionBuilder);
+				filePath1, interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		String[][] headerExpected = {
@@ -297,31 +333,25 @@ public class JMXBasedURLActionDataListBuilderTest {
 			Assert.assertEquals(header.getName(), defaultHeader[0]);
 			Assert.assertEquals(header.getValue(), defaultHeader[1]);
 		}
-		
-		// here for development TODO
-		try {
-			dumpYamlToFile(actions);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 	
 	/**
 	 * Checks if the protocol is read correctly. Uses filePath2.
+	 * Also checks if assertions that can't be translated are created (wrong) 
+	 * or quietly left out (right).
 	 */
 	@Test
 	public void testProtocol() {
 	
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(
-				filePath2, interpreter, actionBuilder);
+				filePath2, interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		String[] urlExpected = {
 				"http://www.xceptance.net",
 				"https://www.xceptance.net",
 				"https://www.xceptance.net",
-				"http://blazemeter.com"
+				"http://blazemeter.com",
 		};
 		
 		for (int i = 0; i < actions.size(); i++) {
@@ -329,6 +359,10 @@ public class JMXBasedURLActionDataListBuilderTest {
 			String realUrl = action.getUrlString();
 			Assert.assertEquals(urlExpected[i], realUrl);
 		}
+		
+		URLActionData action = actions.get(1);
+		List<URLActionDataValidation> validations = action.getValidations();
+		Assert.assertEquals(1, validations.size());
 	}
 	
 	/**
@@ -340,7 +374,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	@Test
 	public void testVariables() throws EvalError {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
-				interpreter, actionBuilder);
+				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		URLActionData action = actions.get(0);
 		Interpreter interpreter = action.getInterpreter();
@@ -394,7 +428,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	@Test
 	public void testResponseAssertion() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
-				interpreter, actionBuilder);
+				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		
@@ -407,9 +441,9 @@ public class JMXBasedURLActionDataListBuilderTest {
 			for (int iValidation = 0; iValidation < length; iValidation++) {
 				URLActionDataValidation validation = validations.get(iValidation);
 				
-				// Note: validation.getSomethingSomething gets the dynamic interpretation
+				// Note: validation.get(SomethingSomething) gets the dynamic interpretation
 				// from the interpreter if there is one. That means a variable ${var} would
-				// be returned with it's value if there is one. ( ${var} -> value
+				// be returned with it's value if there is one. ( ${var} -> value )
 				
 				// If the variable doesn't have a value yet (because the value is 
 				// dynamically assigned at runtime) the raw variable is returned 
@@ -437,7 +471,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		
 		// tests if the response code is validated
 		jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath2, 
-				interpreter, actionBuilder);
+				interpreter, actionBuilder, tmpDumpFolder);
 		actions = jmxBasedBuilder.buildURLActionDataList();
 		URLActionData action = actions.get(0);
 		
@@ -454,7 +488,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	@Test
 	public void testXPathExtractions() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
-				interpreter, actionBuilder);
+				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		String[][][] extractedExpected = {
@@ -498,14 +532,12 @@ public class JMXBasedURLActionDataListBuilderTest {
 	}
 	
 	/*
-	 * Tests the regex extractor with a sample file. Right now it's just one regex 
-	 * extractor with a group (round brackets) and which should extract the first 
-	 * match. TODO expand. 
+	 * Tests a Regex extractor that can be mapped with a sample file.
 	 */
 	@Test
-	public void testRegexExtractions() {
+	public void testRegexExtractionPossible() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath3, 
-				interpreter, actionBuilder);
+				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		String subSelectionModeExpected[] = {
@@ -530,24 +562,26 @@ public class JMXBasedURLActionDataListBuilderTest {
 			Assert.assertEquals(subSelectionContentExpected[i], subSelectionContentActual);
 
 		}
-		
-		// TODO add test for impossible values
 	}
-	/**
-	 * Mainly just here for development. TODO
-	 * 
-	 * @param obj
-	 * @throws FileNotFoundException
-	 */
-	private void dumpYamlToFile(Object obj) throws FileNotFoundException {
-		PrintWriter printwriter = new PrintWriter("/home/daniel/Desktop/dump.yml");	
-	    StringWriter stringwriter = new StringWriter();
 	
-		Yaml yaml = new Yaml();
-		yaml.dump(obj, stringwriter);
+	/**
+	 * Tests with a test file that is full of assertions that can't be mapped to TSNC. 
+	 * Tests if any of them were created.
+	 */
+	@Test
+	public void impossibleMappingAssertions() {
 		
-		printwriter.print(stringwriter.toString());
-		
-		printwriter.close();
+	}
+	
+	@Test(expected = MappingException.class)
+	public void testRegexExtractorImpossible() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath4, 
+				interpreter, actionBuilder, tmpDumpFolder);
+		jmxBasedBuilder.buildURLActionDataList();
+	}
+	
+	@AfterClass
+	public static void deleteYamlFiles() throws IOException {
+		FileUtils.deleteDirectory(new File(tmpDumpFolder));
 	}
 }

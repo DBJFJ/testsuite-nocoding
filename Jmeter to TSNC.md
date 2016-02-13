@@ -1,10 +1,10 @@
 # Jmeter to TSNC Translation
 
-TSNC can recognize test a file created with Jmeter, execute it and convert it into the YAML test files TSNC usually uses. <TO_FINISH> 
+TSNC can recognize a test file created with Jmeter, execute it and convert it into the YAML test files TSNC usually uses. 
 
 While TSNC and Jmeter are both test tools, they concentrate on different areas and work in different ways. TSNC is a small test tool focused on calling urls, validating results and showing the results. Jmeter is a large load testing tool with a much wider set of functions working in a different way. As a result, not all Jmeter tests can be translated to TSNC.
 
-Load Test configurations and Listeners will be ignored since TSNC uses it's own properties and result browsers. The Thread Groups are executed one after the other, not in parallel. Each Thread Group is translated to a seperate test file. 
+Load Test configurations and Listeners will be ignored since TSNC uses it's own properties and result browsers. The Thread Groups are always executed one after the other, not in parallel. Each Thread Group is translated to yaml and saved in a separate test file. 
 
 ### Generally speaking, TSNC will translate tests following this structure: 
 
@@ -51,17 +51,17 @@ XPath extractions are read with name and XPath. The big difference is that in TS
 
 While TSNC and Jmeter both use Regular Expression Extractors, they work in somewhat different ways.  Let's match a regular expression of "Re(.+?)gu(.+?)s(.+?)sion" as an example. In Jmeter you can decide if you want the first match, the second match, a random match or whichever match you'd like. You can also choose which bracket groups to extract and reorder them with a template like "$3$$1$$2$".
 
-TSNC will always extract only one group. If TSNC detects a template it can't wholy match, like the aforementioned "$3$$1$$2$", it will only extract the first group, $3$ and log a warning. Likewise TSNC will always extract from the first match. If it should extract from a random one it will log a warning and extract from the first. If it should extract from the second, third or another later match, it will log an error and skip that extraction. <TODO_&_REALLY?>
+TSNC will always extract only one group. If TSNC detects a template it can't wholy match, like the aforementioned "$3$$1$$2$", it will only extract the first group, $3$ and log a warning. Likewise TSNC will always extract from the first match. If it should extract from a random one it will log a warning and extract from the first. If it should extract from the second, third or another later match, it will log an error and skip that extraction. 
 
+Should template or match be empty, TSNC will default to 1.
 #### Response Assertions
 
 Response Assertions can usually be translated to TSNC, but some functions again have no equivalent:
-* the pattern matching rule 'not' can't be mapped
-* the 'Ignore Status' field can't be mapped
-* 'URL Sampled' isn't mapped
+* the pattern matching rule 'not' can't be mapped,  the assertion won't be created
+* the 'Ignore Status' field can't be mapped,  the assertion won't be created
+* 'URL Sampled' isn't mapped, TSNC, the assertion won't be created
 * both 'Text Response' and 'Document (Text)' are mapped to the response body
 * the difference between 'Main sample and sub-samples', 'Main sample only' and 'Sub-samples only' is ignored, they are all mapped to the resulting web page
-* "%20" is automatically translated to a whitespace when used for a validation in Jmeter. But not in TSNC. Tests in which a variable is first used as a parameter, thus requiring %20, and later used for a validation will almost certainly fail. <What_TO_DO?>
 
 TSNC also adds a default HttpResponseCode=200 validation to every action, so redirections will cause errors unless an assertion for the expected response code was manually defined. 
 
@@ -75,12 +75,12 @@ The mapping for Response Assertions from Jmeter to TSNC is as such:
 
 * **Response Field to Test** is also mapped to 'selectionMode'
     * Text Response/ Document(text) -> Regex 
-    * URL Sampled can't be mapped yet
+    * URL Sampled can't be mapped yet, validations won't be created  
     * Response Code -> Http Response Code (not a validation object. There can only be one response code per action but something else woudn't make sense anyway.)	
-    * Response Message can't be mapped
+    * Response Message can't be mapped, validations won't be created  
     * Response Headers -> can't be mapped, validations won't be created  
-    * Ignore Status -> can't be mapped, validations won't be created 
-
+    * Ignore Status -> can't be mapped, validations won't be created
+<TODO write a test for all these validations that can't be mapped>
 The selectionContent from TSNC is always mapped to '.*' unless a variable should be asserted. In that case is is mapped to ${variablename}.
 
 * **Pattern Matching Rules** are mapped to TSNCs validationMode
@@ -88,8 +88,7 @@ The selectionContent from TSNC is always mapped to '.*' unless a variable should
     * Matches -> Matches
     * Equals -> Text
     * Substring -> Exists
-    * Not can't be mapped, validations won't be created
-
+    * Not -> Exception 
 * **Patterns to Test** is always mapped to 'validationContent'. If there are multiple patterns to test TSNC makes multiple validation objects.
 
 #### Listeners 
