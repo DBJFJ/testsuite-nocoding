@@ -30,36 +30,14 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 /**
  * Implementation of the {@link URLActionDataListBuilder} for Jmeters .jmx
  * files. <br/>
- * Generally speaking, TSNC will translate tests following this structure:
- * 
- * <ul>
- * <li>Thread Group</li>
- * <ul>
- * <li>(Variable Declaration)
- * <li>HTTP Request Sampler
- * <ul>
- * <li>XPath Extractions
- * <li>Response Assertions
- * </ul>
- * </ul>
- * </ul>
- * 
- * (See the documentation file for details.)
- * 
+ * TSNC only implements a subset if Jmeters functions and of those only a subset is translated.
+ * The tests are dumped into a YAML file in ./config/data before execution.
+ * See the configuration file for details.
  * <p>
- * If the Jmeter test does not follow this structure and/ or includes other
- * important elements it won't be translated correctly.
- * </p>
- * 
- * Load Test configurations like the number of threads or the ramp up time won't
- * be translated. </br> Listeners are ignored. TSNCs own result browser will be
- * used.
- * 
  * On the technical side Jmeter saves it's tests in an xml file without a DTD.
  * This class parses the xml file using StAX. The various constants are the
- * names of the tags, the attributes or their values. It doesn't do anything
- * else, so there are some incongruities where Jmeters functionality doesn't
- * match TSNCs.
+ * names of the tags, the attributes or their values. 
+ * </p>
  */
 public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
@@ -1203,7 +1181,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				throw new MappingException();
 			}
 
-			// in Jmeters "validate variable contains/ substring xyz"
+			// Jmeters "validate variable contains/ substring xyz"
 			// validations
 			// contains and substring still get mapped to TSNCs exist.
 			// but validate variable Exists xyz doesn't make any sense
@@ -1251,9 +1229,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			XltLogger.runTimeLogger
 					.error("Coudn't translate assertion from Jmeter to TSNC: "
 							+ "Headers can't be asserted");
-			throw new MappingException("Can't assert Headers in TSNC"); // TODO
-																		// really?
-
+			throw new MappingException("Can't assert Headers in TSNC"); 
+			
 		case CHAR_ASSERT_RESP_MESSAGE:
 			// this can't be mapped
 			XltLogger.runTimeLogger
@@ -1266,10 +1243,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			XltLogger.runTimeLogger
 					.error("Coudn't translate assertion from Jmeter to TSNC: "
 							+ "URL Sample can't be asserted");
-			throw new MappingException("Can't assert URL Sample in TSNC"); // TODO
-																			// really?
-
-			// the exception ...
+			throw new MappingException("Can't assert URL Sample in TSNC");
+			
 		case CHAR_ASSERT_RESP_CODE:
 			if (selectionMode == null) {
 				selectionMode = VALIDATE_RESP_CODE;
@@ -1341,8 +1316,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			break;
 
 		// the following values come from Jmeters "Not". Since there's no "Not"
-		// option in
-		// TSNCs validations, log an error and throw an exception
+		// option in TSNCs validations, log an error and throw an exception
 		case 5:
 			// Jmeter: Matches and Not.
 			XltLogger.runTimeLogger
@@ -1458,7 +1432,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		if (selectionMode.equals(VALIDATE_RESP_CODE)) {
 			String httpResponseCode = allValidationContent.get(0);
 			actionBuilder.setHttpResponceCode(httpResponseCode);
-		} else {
+		} 
+		else {
 			for (String validationContent : allValidationContent) {
 
 				URLActionDataValidation validation = new URLActionDataValidation(
@@ -1602,8 +1577,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				String attrName = getAttributeValue(ATTRN_NAME, se);
 
 				// if the name attribute is the right String, get the content of
-				// the tag
-				// and set something, depending on the ATTRNNAME value
+				// the tag and set something, depending on the ATTRNNAME value
 				switch (attrName) {
 
 				case ATTRV_REGEX_EXT_REFNAME: {
@@ -1622,8 +1596,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					if (event.isCharacters()) {
 						group = getTagContent(event);
 					} else {
-						// set the default = 1;
-						group = "$1$";
+						// set the default = 0;
+						group = "$0$";
 					}
 					break;
 				}
@@ -1653,8 +1627,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 							throw new MappingException(
 									"Can only extract from first match. "
 											+ name
-											+ "intented to extract from a later match. Test Case can't be "
-											+ "mapped to TSNC");
+											+ "intented to extract from a later match.");
 						}
 					}
 
@@ -1676,38 +1649,28 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			}
 		}
 
-		// check which bracket group should be extracted ...
-		if (group == null || group.isEmpty()) {
-			// this should never happen. But here could be an errorcheck in case
-			// the Jmeter
-			// test case was faulty
-		} else {
-
-			// if multiple groups should be should be extracted, log a warning
-			// and
-			// just extract the first one
-			String templates[] = group.split(Pattern.quote("$$"));
-			if (templates.length > 1) {
-				XltLogger.runTimeLogger
-						.warn("The regex extractor "
-								+ name
-								+ "intends to extract "
-								+ "multiple groups. That is currently not possible on TSNC. Only the first "
-								+ "group will be extracted.");
-			}
-
-			group = templates[0];
-			group = group.replace("$", "");
-
-			if (Integer.parseInt(group) != 0) {
-
-				// set the subSelectionMode
-				subSelectionMode = URLActionDataStore.REGEXGROUP;
-				subSelectionContent = group;
-
-			}
+		// if multiple groups should be should be extracted, log a warning
+		// and
+		// just extract the first one
+		String templates[] = group.split(Pattern.quote("$$"));
+		if (templates.length > 1) {
+			XltLogger.runTimeLogger.error("Regex Extractor "
+					+ name
+					+ " should extract from a later match. Since TSNC always extracts from "
+					+ "the first match, that is impossible.");
+			throw new MappingException("Can only extract from first match. " + name
+					+ "intented to extract from a later match.");
 		}
+		group = templates[0];
+		group = group.replace("$", "");
 
+		if (Integer.parseInt(group) != 0) {
+
+			// set the subSelectionMode
+			subSelectionMode = URLActionDataStore.REGEXGROUP;
+			subSelectionContent = group;
+		}
+		
 		storeBuilder.setName(name);
 		storeBuilder.setSelectionMode(selectionMode);
 		storeBuilder.setSelectionContent(selectionContent);
@@ -1715,6 +1678,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		storeBuilder.setSubSelectionContent(subSelectionContent);
 		URLActionDataStore store = storeBuilder.build();
 		return store;
+		
+		// catch MappingException sometime TODO
 	}
 
 	/**
