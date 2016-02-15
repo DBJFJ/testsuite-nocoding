@@ -50,6 +50,10 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * for tagNameVariables. Underlines are used for readability.
 	 */
 
+	private final String TNAME_TEST_PLAN = "TestPlan";
+	
+
+	
 	private final String TNAME_THREAD_GROUP = "ThreadGroup";
 
 	private final String TNAME_ACTION = "HTTPSamplerProxy";
@@ -117,7 +121,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * name="HTTPSampler.response_timeout"></stringProp> <stringProp
 	 * name="HTTPSampler.protocol"></stringProp>
 	 */
-
+	
+	private final String ATTRN_TESTPLAN_NAME = "testname";
+	
 	private final String ATTRN_NAME = "name";
 
 	private final String ATTRN_ACTION_NAME = "testname";
@@ -140,9 +146,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	private final String ATTRV_ACTION_PROTOC = "HTTPSampler.protocol";
 
-	private final String ATTRV_ACTION_URL = "HTTPSampler.domain";
+	private final String ATTRV_ACTION_WEBSITE = "HTTPSampler.domain";
 
-	private final String ATTRV_ACTION_URL_PATH = "HTTPSampler.path";
+	private final String ATTRV_ACTION_PATH = "HTTPSampler.path";
 
 	private final String ATTRV_ACTION_METHOD = "HTTPSampler.method";
 
@@ -221,7 +227,13 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 */
 	private final String VALIDATE_RESP_CODE = "respCode";
 
+	private String defaultWebsite = null;
+	
+	private String defaultPath = null;
+	
 	private String defaultProtocol = null;
+	
+	private List<NameValuePair> defaultParameters = new ArrayList<NameValuePair>();
 
 	private String dumpThere;
 
@@ -246,7 +258,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 */
 	public JMXBasedURLActionDataListBuilder(final String filePath,
 			final ParameterInterpreter interpreter,
-			final URLActionDataBuilder actionBuilder, final String dumpThere) {
+			final URLActionDataBuilder actionBuilder, 
+			final String dumpThere) {
 		super(filePath, interpreter, actionBuilder);
 
 		this.dumpThere = dumpThere;
@@ -292,6 +305,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		// overwrite
 		// each other if the Thread Groups happen to have the same name.
 		int index = 1;
+		String nameTPlan = null;
 		XltLogger.runTimeLogger
 				.debug("Starting Jmeter -> TSNC translation ...");
 
@@ -310,23 +324,30 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 					StartElement se = event.asStartElement();
 					String tagName = getTagName(se);
-
+					
+					// if it's a testplan
+					if (tagName.equals(TNAME_TEST_PLAN)) {
+						nameTPlan = getAttributeValue(ATTRN_TESTPLAN_NAME, se);
+						readVarsInTestPlan(reader, interpreter);
+					}
+					
+					// if it's a Thread Group
 					if (tagName.equals(TNAME_THREAD_GROUP)) {
-						String name = getAttributeValue(ATTRN_ACTION_NAME, se);
-						XltLogger.runTimeLogger.info("Reading " + name + "...");
+						String nameTGroup = getAttributeValue(ATTRN_ACTION_NAME, se);
+						XltLogger.runTimeLogger.info("Reading " + nameTGroup + "...");
 						List<URLActionData> testCaseActions = readThreadGroup(reader);
 						actions.addAll(testCaseActions);
 
 						// dump it into a yaml file
-						Path dumpPath = Paths.get(dumpThere + "/" + index
-								+ name + ".yml");
+						Path dumpPath = Paths.get(dumpThere + "/" + nameTPlan + "-" +
+								index + "-"	+ nameTGroup + ".yml");
 						index++;
 						try {
 							YAMLBasedDumper.dumpActionsYaml(testCaseActions,
 									dumpPath);
 						} catch (IOException e) {
 							XltLogger.runTimeLogger
-									.error("Coudn't write Test Case " + name
+									.error("Coudn't write Test Case " + nameTGroup
 											+ " to a YAML file.");
 							throw new IllegalArgumentException(e.getMessage());
 						}
@@ -345,6 +366,32 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		}
 
 		return actions;
+	}
+
+	private void readVarsInTestPlan(XMLEventReader reader,
+			ParameterInterpreter interpreter) throws XMLStreamException {
+		while (true) {
+			XMLEvent event = reader.nextEvent();
+
+			if (event.isEndElement()) {
+				EndElement ee = event.asEndElement();
+				String name = getTagName(ee);
+				if (name.equals(TNAME_TEST_PLAN)) {
+					break;
+				}
+			}
+			
+			// the way the correct tag is found here is somewhat sloppy
+			if (event.isStartElement()) {
+				StartElement se = event.asStartElement();
+			
+				String elementType = getAttributeValue(ATTRN_ELE_TYPE, se);
+
+				if (elementType.equals(ATTRV_ELE_ISVAR)) {
+					readVariable(reader);
+				}
+			}
+		}
 	}
 
 	/**
@@ -504,7 +551,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/**
 	 * Is called inside the {@link #readVariables} method to parse a single
-	 * variable. Parses a single vaiable with name and value and saves it in the
+	 * variable. Parses a single variable with name and value and saves it in the
 	 * interpreter.
 	 * 
 	 * @param reader
@@ -561,7 +608,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		try {
 			this.interpreter.set(nvp);
 		} catch (EvalError e) {
-			XltLogger.runTimeLogger.warn("Coudn't set variable: " + argsName
+			XltLogger.runTimeLogger.error("Coudn't set variable: " + argsName
+					+ "=" + argsValue); 
+			throw new MappingException("Coudn't set variable: " + argsName
 					+ "=" + argsValue);
 		}
 	}
@@ -595,9 +644,23 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				String name = getAttributeValue(ATTRN_NAME, se);
 
 				switch (name) {
+				case ATTRV_ACTION_WEBSITE:
+					event = reader.nextEvent();
+					defaultWebsite = getTagContent(event);
+					break;
+					
+				case ATTRV_ACTION_PATH:
+					event = reader.nextEvent();
+					defaultPath = getTagContent(event);
+					break;
+				
 				case ATTRV_ACTION_PROTOC:
 					event = reader.nextEvent();
 					defaultProtocol = getTagContent(event);
+					break;
+					
+				case ATTRV_ACTION_PARAM:
+					defaultParameters = readParameters(actionBuilder, reader);
 					break;
 
 				default:
@@ -718,9 +781,10 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		XltLogger.runTimeLogger
 				.debug("Reading new Action: " + testName + "...");
 
+		// set the defaults ...
 		String protocol = defaultProtocol;
-		String url = null;
-		String path = null;
+		String website = defaultWebsite;
+		String path = defaultPath;
 
 		// set the testname and the interpreter
 		actionBuilder.setName(testName);
@@ -758,13 +822,15 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 						protocol = event.asCharacters().getData();
 					}
 					break;
-				case ATTRV_ACTION_URL: {
+				case ATTRV_ACTION_WEBSITE: {
 					// read the url
 					event = reader.nextEvent();
-					url = event.asCharacters().getData();
+					if (event.isCharacters()) {
+						website = event.asCharacters().getData();
+					}
 					break;
 				}
-				case ATTRV_ACTION_URL_PATH: {
+				case ATTRV_ACTION_PATH: {
 					// read the path. The path is added to the end of the URL.
 					// Example: url=www.otto.de, path: /herrenmode/
 					event = reader.nextEvent();
@@ -784,7 +850,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				}
 				case ATTRV_ACTION_PARAM: {
 					// read the parameters
-					readParameters(actionBuilder, reader);
+					List<NameValuePair> parameters = readParameters(actionBuilder, reader);
+					// set the parameters
+					if (parameters != null) {
+						actionBuilder.setParameters(parameters);
+					}
 					break;
 				}
 				default: {
@@ -800,7 +870,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		if (protocol == null) {
 			protocol = "http";
 		}
-		url = protocol + "://" + url + path;
+		String url = protocol + "://" + website + path;
 		actionBuilder.setUrl(url);
 
 		readActionContent(reader, interpreter, actionBuilder);
@@ -817,12 +887,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 *            the actionBuilder in which the parameters will be saved
 	 * @param reader
 	 *            the XMLEventReader with it's position
+	 * @return parameters
 	 * @throws XMLStreamException
 	 */
-	private void readParameters(URLActionDataBuilder actionBuilder,
+	private List<NameValuePair> readParameters(URLActionDataBuilder actionBuilder,
 			XMLEventReader reader) throws XMLStreamException {
 
 		List<NameValuePair> parameters = new ArrayList<>();
+		parameters.addAll(defaultParameters);
 
 		// loop until the loop is closed with an EndElement with the tag name
 		// TNAMEPARAMS
@@ -857,11 +929,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				}
 			}
 		}
-
-		// set the parameters
-		if (parameters != null) {
-			actionBuilder.setParameters(parameters);
-		}
+		
+		return parameters;
 	}
 
 	/**

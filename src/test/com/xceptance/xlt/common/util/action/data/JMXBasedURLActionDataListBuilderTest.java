@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -14,7 +16,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import bsh.EvalError;
-import bsh.Interpreter;
 
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
 import com.xceptance.xlt.api.data.GeneralDataProvider;
@@ -191,10 +192,12 @@ public class JMXBasedURLActionDataListBuilderTest {
 				interpreter, actionBuilder, tmpDumpFolder);
 		jmxBasedBuilder.buildURLActionDataList();
 		
-		String[] expectedNames = {"Thread Group1", "Thread Group2"};
+		String[] expectedNames = {"Test Plan-1-Thread Group1.yml", "Test Plan-2-Thread Group2.yml"};
 		
 		for (String name : expectedNames) {
-			Files.exists(Paths.get(tmpDumpFolder + name), LinkOption.NOFOLLOW_LINKS);
+			Path path = Paths.get(tmpDumpFolder + "/" + name);
+			boolean doesExist = Files.exists(path, LinkOption.NOFOLLOW_LINKS);
+			Assert.assertTrue(doesExist);
 		}
     }
 	
@@ -214,7 +217,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		
 		// check the number of actions 
 		int numberOfActions = actions.size();
-		Assert.assertEquals(7, numberOfActions);
+		Assert.assertEquals(8, numberOfActions);
 		
 		// check if the names of the actions are as expected
 		String[] namesExpected = {
@@ -296,6 +299,40 @@ public class JMXBasedURLActionDataListBuilderTest {
 	}
 	
 	/**
+	 * Tests if the default values for path, website, protocol and parameters in the Http Request 
+	 * Defaults is read correctly. As usual, it tests with an example test file.
+	 */
+	@Test 
+	public void testHttpDefaults() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(
+				filePath1, interpreter, actionBuilder, tmpDumpFolder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
+		
+		// define default values, for an action without any other values
+		String defaultUrl = "https://www.google.de";
+		List<NameValuePair> defaultParameters = new ArrayList<NameValuePair>();
+		defaultParameters.add(new NameValuePair("x-param", "parameter1"));
+		
+		// define the values for the action with more then just default values
+		String manualUrl = "http://www.xceptance.com/en";
+		List<NameValuePair> manualParameters = new ArrayList<NameValuePair>();
+		manualParameters.addAll(defaultParameters);
+		manualParameters.add(new NameValuePair("y-param", "parameter2"));
+		
+		// check the empty action for defaults
+		URLActionData actionWithDefaults = actions.get(6);
+		Assert.assertEquals(defaultUrl, actionWithDefaults.getUrlString());
+		Assert.assertEquals(defaultParameters, actionWithDefaults.getParameters());
+				
+		// check the nonempty action. The url should have been overwritten,
+		// the parameters just added.
+		URLActionData actionWithManual = actions.get(7);
+		Assert.assertEquals(manualUrl, actionWithManual.getUrlString());
+		Assert.assertEquals(manualParameters, actionWithManual.getParameters());
+		
+	}
+	
+	/**
 	 * Tests if the HeaderManager is read correctly and the custom headers are set correctly. </br>
 	 * Also tests default headers. </br> 
 	 */
@@ -369,7 +406,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 * Checks if the variables were stored and used correctly. <br/>
 	 * Tests with a known test case. <br/>
 	 * Only tests the first action since all variables are stored at the start in this test case <br/>
-	 * Only checks if names are mapped to the expected values, doesn't test the number of variables 
+	 * Only checks if names are mapped to the expected values, doesn't test the number of variables.</br>
+	 * Tests User Defined Variables in the Thread Group as well as User Defined Variables in the Test Plan. 
 	 */
 	@Test
 	public void testVariables() throws EvalError {
@@ -377,8 +415,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		URLActionData action = actions.get(0);
-		Interpreter interpreter = action.getInterpreter();
-		
+		ParameterInterpreter interpreter = action.getInterpreter();
 		
 		// checks if the parameters of the actions are as expected
 		String[][] parametersExpected = {
@@ -394,6 +431,26 @@ public class JMXBasedURLActionDataListBuilderTest {
 		for (int i = 0; i <= 5; i++) {
 			String name = parametersExpected[i][0];
 			String valueExpected = parametersExpected[i][1];
+			String valueActual = interpreter.get(name).toString();
+			Assert.assertEquals(valueExpected, valueActual);
+		}
+		
+		// check if variables that were defined in the Test Plan element are also read ...
+		jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath2, 
+				interpreter, actionBuilder, tmpDumpFolder);
+		actions = jmxBasedBuilder.buildURLActionDataList();
+		action = actions.get(0);
+		interpreter = action.getInterpreter();
+		
+		// checks if the parameters of the actions are as expected
+		String[][] parametersExpected2 = {
+			{"var1", "content1"},
+			{"var2", "content2"},	
+		};
+	
+		for (int i = 0; i <= 1; i++) {
+			String name = parametersExpected2[i][0];
+			String valueExpected = parametersExpected2[i][1];
 			String valueActual = interpreter.get(name).toString();
 			Assert.assertEquals(valueExpected, valueActual);
 		}
@@ -541,15 +598,15 @@ public class JMXBasedURLActionDataListBuilderTest {
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
 		String subSelectionModeExpected[] = {
-				URLActionDataStore.REGEXGROUP, null, URLActionDataStore.REGEXGROUP
+				URLActionDataStore.REGEXGROUP, null, null
 		};
 		String subSelectionContentExpected[] = {
-				"2", null, "1" 
+				"2", null, null 
 		};
 		
 		// test if subSelectionMode/-Value are read correctly (action 0),
 		// if subSelectionMode/-Value are left out when they should be (action 1)
-		// and if correct default values are set for subSelectioMode and /-Value (action 2= 
+		// and if correct default values are set for subSelectionMode and /-Value (action 2= 
 		
 		for (int i = 0; i < actions.size(); i++) {
 			URLActionData action = actions.get(i);
