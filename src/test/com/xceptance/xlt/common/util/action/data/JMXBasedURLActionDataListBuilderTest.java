@@ -627,7 +627,13 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 */
 	@Test
 	public void impossibleMappingAssertions() {
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath2, 
+				interpreter, actionBuilder, tmpDumpFolder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
+		List<URLActionDataValidation> validations = actions.get(1).getValidations();
+		
+		Assert.assertEquals(1, validations.size());
 	}
 	
 	@Test(expected = MappingException.class)
@@ -635,6 +641,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath4, 
 				interpreter, actionBuilder, tmpDumpFolder);
 		jmxBasedBuilder.buildURLActionDataList();
+		// TODO expand, but, seriously like 10 files?
 	}
 	
 	@AfterClass
