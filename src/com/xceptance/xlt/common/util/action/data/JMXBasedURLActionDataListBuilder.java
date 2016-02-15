@@ -180,12 +180,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	private final String ATTRV_ASSERT_IGNORE_STATUS = "Assertion.assume_success";
 
-	// Extractors ...
-
+	// XPath Extractor ...
 	private final String ATTRV_XPATH_EXT_REFNAME = "XPathExtractor.refname";
 
 	private final String ATTRV_XPATH_EXT_XPATH = "XPathExtractor.xpathQuery";
 
+	private final String ATTRV_XPath_EXT_FROM_VAR = "Scope.variable";
+	
+	// Regex Extractor ...
 	private final String ATTRV_REGEX_EXT_REFNAME = "RegexExtractor.refname";
 
 	private final String ATTRV_REGEX_EXT_REGEX = "RegexExtractor.regex";
@@ -193,6 +195,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String ATTRV_REGEX_EXT_GROUP = "RegexExtractor.template";
 
 	private final String ATTRV_REGEX_EXT_MATCH = "RegexExtractor.match_number";
+	
+	private final String ATTRV_REGEX_EXT_FROM_VAR = "Scope.variable";
+	
+	/**
+	 * Determines whether to extract from the message, just the response text, 
+	 * the resp. code.... IE an exception flag. 
+	 */
+	private final String ATTRV_REGEX_EXT_SCOPE = "RegexExtractor.useHeaders";
 
 	/*
 	 * The following constants are used when important values are in the
@@ -1250,16 +1260,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				throw new MappingException();
 			}
 
-			// Jmeters "validate variable contains/ substring xyz"
-			// validations
-			// contains and substring still get mapped to TSNCs exist.
-			// but validate variable Exists xyz doesn't make any sense
-			// so in that case, set validationMode to Matches
+			// In case selectionMode == VAR and validationMode == EXISTS, 
+			// because that doesn't make sense.
+			
 			if (selectionMode == URLActionDataValidation.VAR
 					&& (validationMode == URLActionDataValidation.EXISTS)) {
 				validationMode = URLActionDataValidation.MATCHES;
 			}
-
+			
 			createValidations(name, selectionMode, selectionContent,
 					validationMode, allValidationContent, actionBuilder);
 		} 
@@ -1274,9 +1282,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/**
 	 * Maps the value from Jmeters Pattern Matching Rules to TSNCs
-	 * validationMode. Called in {@link #readResponseAssertion}. </br> Since a
-	 * significant part of them don't match it defaults to
-	 * {@link URLActionDataValidation#REGEXP}.
+	 * validationMode. Called in {@link #readResponseAssertion}. </br> 
 	 * 
 	 * @param selectionModeInJmt
 	 *            the rough aquivalent to the selectionMode in Jmeter, an
@@ -1292,40 +1298,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 		switch (selectionModeInJmt) {
 
-		// the stuff that is just impossible in TSNC ...
-		case CHAR_ASSERT_RESP_HEADER:
-			// this can't be mapped easily
-			XltLogger.runTimeLogger
-					.error("Coudn't translate assertion from Jmeter to TSNC: "
-							+ "Headers can't be asserted");
-			throw new MappingException("Can't assert Headers in TSNC"); 
-			
-		case CHAR_ASSERT_RESP_MESSAGE:
-			// this can't be mapped
-			XltLogger.runTimeLogger
-					.error("Coudn't translate assertion from Jmeter to TSNC: "
-							+ "Response Message can't be asserted");
-			throw new MappingException("Can't assert Response Message in TSNC");
-
-		case CHAR_ASSERT_URL:
-			// this can't be mapped
-			XltLogger.runTimeLogger
-					.error("Coudn't translate assertion from Jmeter to TSNC: "
-							+ "URL Sample can't be asserted");
-			throw new MappingException("Can't assert URL Sample in TSNC");
-			
-		case CHAR_ASSERT_RESP_CODE:
-			if (selectionMode == null) {
-				selectionMode = VALIDATE_RESP_CODE;
-			} else {
-				XltLogger.runTimeLogger
-						.error("Can't assert the response code of a variable in TSNC");
-				throw new MappingException(
-						"Can't assert the response code of a variable in TSNC");
-			}
-			break;
-
-		// and the normal stuff ...
+		// the normal stuff ...	
+		
 		case CHAR_ASSERT_TEXT:
 			if (selectionMode == null) {
 				selectionMode = URLActionDataValidation.REGEXP;
@@ -1337,9 +1311,46 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				selectionMode = URLActionDataValidation.REGEXP;
 			}
 			break;
+			
+		// somewhat troublesome, but usually possible ...
+			
+		case CHAR_ASSERT_RESP_CODE:
+		
+			if (selectionMode == null) {
+				selectionMode = VALIDATE_RESP_CODE;
+			} 
+			else { //TODO expand
+				throw new MappingException("Can't validate the response code of a variable.");
+			}
+			break;
+			
+		case CHAR_ASSERT_RESP_HEADER:
+			if (selectionMode == null) {
+				selectionMode = URLActionDataValidation.HEADER;
+			}  
+			else { //TODO expand
+				throw new MappingException("Can't validate the response header of a variable.");
+			}
+			break;
+			
+		// and this stuff that is just impossible in TSNC ...
+			
+		case CHAR_ASSERT_RESP_MESSAGE:
+			// can't validate the response message
+			XltLogger.runTimeLogger
+					.error("Coudn't translate assertion from Jmeter to TSNC: "
+							+ "Response Message can't be asserted");
+			throw new MappingException("Can't assert Response Message in TSNC");
 
+		case CHAR_ASSERT_URL:
+			// can't validate the url 
+			XltLogger.runTimeLogger
+					.error("Coudn't translate assertion from Jmeter to TSNC: "
+							+ "URL Sample can't be asserted");
+			throw new MappingException("Can't assert URL Sample in TSNC");
+			
 		default:
-			// there shoudn't be anything left ...
+			// Something went wrong! 
 			XltLogger.runTimeLogger
 					.error("Coudn't detect selectionMode/ Response Field to Test");
 			throw new MappingException(
@@ -1491,26 +1502,68 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			String selectionContent, String validationMode,
 			List<String> allValidationContent,
 			URLActionDataBuilder actionBuilder) {
-
+	
+		// In the exceptional cases ...
+		
+		// if selectionMode: HEADER, the selectionContent needs to be transformed a bit
+			
+		if (selectionMode.equals(URLActionDataValidation.HEADER)) {
+			
+			for (String validationContent : allValidationContent) {
+				String[] header = validationContent.split(":");
+				
+				if (2 < header.length) {
+					throw new MappingException("Sorry, validation " + name +
+							" coudn't be created.");
+				}
+				
+				if (header.length == 2) {
+					selectionContent = header[0];		// name
+					validationContent = header[1];		// value
+					
+					URLActionDataValidation validation = new URLActionDataValidation(
+							name, selectionMode, selectionContent, validationMode,
+							validationContent, interpreter);
+					actionBuilder.addValidation(validation);
+				}
+				
+				if (header.length == 1) {
+					
+					// there's only a name (or a value, but there's no way to know which)
+					selectionContent = header[0];
+					validationMode = URLActionDataValidation.EXISTS;
+					
+					// How does this work?
+					
+				}
+			}
+			return;
+		}
+		
+		// if the response code should be validated ...
+		
+		if (selectionMode.equals(VALIDATE_RESP_CODE)) {
+			String httpResponseCode = allValidationContent.get(0);
+			actionBuilder.setHttpResponceCode(httpResponseCode);
+			return;
+		} 
+		
+		
+		// In the more normal cases ...
+		
 		if (selectionContent == null) {
 			// this _should_ be everything
 			selectionContent = ".*";
 		}
 
-		// if the response code should be validated
-		if (selectionMode.equals(VALIDATE_RESP_CODE)) {
-			String httpResponseCode = allValidationContent.get(0);
-			actionBuilder.setHttpResponceCode(httpResponseCode);
-		} 
-		else {
-			for (String validationContent : allValidationContent) {
+		for (String validationContent : allValidationContent) {
 
-				URLActionDataValidation validation = new URLActionDataValidation(
-						name, selectionMode, selectionContent, validationMode,
-						validationContent, interpreter);
-				actionBuilder.addValidation(validation);
-			}
+			URLActionDataValidation validation = new URLActionDataValidation(
+					name, selectionMode, selectionContent, validationMode,
+					validationContent, interpreter);
+			actionBuilder.addValidation(validation);
 		}
+		return;
 	}
 
 	/**
@@ -1569,6 +1622,21 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					selectionContent = getTagContent(event);
 					break;
 				}
+				
+				case ATTRV_XPath_EXT_FROM_VAR:
+					// exists if it should extract from a variable. 
+					// that's impossible in TSNC, so just log and throw.
+					
+					if (event.isCharacters()) {
+						XltLogger.runTimeLogger.error("Regex Extractor "
+								+ name
+								+ " should extract from a variable. Since TSNC always extracts from "
+								+ "the first match. That is unfortunately impossible in TSNC.");
+						throw new MappingException("Regex Extractor "
+								+ name
+								+ " should extract from a variable. Since TSNC always extracts from "
+								+ "the first match. That is unfortunately impossible in TSNC.");
+					}
 
 				default: {
 					break;
@@ -1650,36 +1718,42 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				switch (attrName) {
 
 				case ATTRV_REGEX_EXT_REFNAME: {
+					// get the name of the variable to create
+					
 					event = reader.nextEvent();
 					name = getTagContent(event);
 					break;
 				}
 				case ATTRV_REGEX_EXT_REGEX: {
+					// get the regex
+					
 					event = reader.nextEvent();
 					selectionContent = getTagContent(event);
 					break;
 				}
 				case ATTRV_REGEX_EXT_GROUP: {
+					// get/ determine if a subSelectionMode is needed
+					
 					event = reader.nextEvent();
-
 					if (event.isCharacters()) {
 						group = getTagContent(event);
-					} else {
+					} 
+					else {
 						// set the default = 0;
 						group = "$0$";
 					}
 					break;
 				}
-				case ATTRV_REGEX_EXT_MATCH: {
+				case ATTRV_REGEX_EXT_MATCH: 
+					// the match specifies from which match to extract from.
+					// since TSNC always extracts from the first match it
+					// logs a warning at "random" (=0) and an error at 2,3,4
+					// ...
+					
 					event = reader.nextEvent();
-
 					if (event.isCharacters()) {
 						int match = Integer.parseInt(getTagContent(event));
 
-						// the match specifies from which match to extract
-						// since TSNC always extracts from the first match it
-						// logs a warning at "random" (=0) and an error at 2,3,4
-						// ...
 						if (match == 0) {
 							XltLogger.runTimeLogger
 									.warn("Regex Extractor "
@@ -1709,7 +1783,41 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 										+ name + "."
 										+ "Extracting from first match ... ");
 					}
-				}
+					// end match ...
+					break;
+				
+				case ATTRV_REGEX_EXT_FROM_VAR:
+					// exists if it should extract from a variable. 
+					// that's impossible in TSNC, so just log and throw.
+					
+					if (event.isCharacters()) {
+						XltLogger.runTimeLogger.error("Regex Extractor "
+								+ name
+								+ " should extract from a variable. Since TSNC always extracts from "
+								+ "the first match. That is unfortunately impossible in TSNC.");
+						throw new MappingException("Regex Extractor "
+								+ name
+								+ " should extract from a variable. Since TSNC always extracts from "
+								+ "the first match. That is unfortunately impossible in TSNC.");
+					}
+					
+				case ATTRV_REGEX_EXT_SCOPE:
+					// if we should extract from header, code, URL or anything but the body
+					// we can't, so just log and throw
+					
+					event = reader.nextEvent();
+					String content = getTagContent(event);
+					if ( !(content.equals("as document") || content.equals("unescaped") ||
+								content.equals("false")) ) {
+						XltLogger.runTimeLogger.error("Regex Extractor "
+								+ name
+								+ " should extract from a variable. Since TSNC always extracts from "
+								+ "the first match. That is unfortunately impossible in TSNC.");
+						throw new MappingException("Regex Extractor "
+								+ name
+								+ " should extract from a variable. Since TSNC always extracts from "
+								+ "the first match. That is unfortunately impossible in TSNC.");
+					}
 
 				default: {
 					break;
