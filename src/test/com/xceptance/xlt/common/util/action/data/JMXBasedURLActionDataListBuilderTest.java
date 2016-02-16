@@ -11,7 +11,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,7 +48,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 	private final String filePath1 = path + "TSearchDidYouMean.jmx";
 	private final String filePath2 = path + "HTTP Request.jmx";
 	private final String filePath3 = path + "regex.jmx";
-	private final String filePath4 = path + "regexImp.jmx";
+	private final String filePath4 = path + "/impossible/";
 	private final String stringNotExistingFile = "notExistingFile";
     private final String fileEmptyFile = path + "emptyFile.yml";
 	
@@ -678,11 +677,40 @@ public class JMXBasedURLActionDataListBuilderTest {
 	}
 	
 	/**
+	 * Tests with files that include Regular Expression Extractors that can't be mapped to 
+	 * TSNC. Tests if the program crashes for every one of them.
+	 * <\br>
+	 * A template like $3$$2$ doesn't cause a crash, just a warning and translation to 
+	 * Group: 2,
+	 */
+	@Test
+	public void impossibleRegex() {
+		
+		String genName = "-regex.jmx";
+		int crashNum = 0;
+		final int crashesExpected = 3;
+		
+		for (int i = 1; i < 5; i++ ) {
+			String fileName = filePath4 + i + genName;
+			
+			try {
+				JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(
+						fileName, interpreter, actionBuilder, tmpDumpFolder);
+				jmxBasedBuilder.buildURLActionDataList();
+			}
+			catch (MappingException e) {
+				crashNum++;
+			}
+		}
+		Assert.assertEquals(crashesExpected, crashNum);
+	}
+
+	/**
 	 * Tests with a test file that is full of assertions that can't be mapped to TSNC. 
 	 * Tests if any of them were created.
 	 */
 	@Test
-	public void impossibleMappingAssertions() {
+	public void impossibleValidations() {
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath2, 
 				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
@@ -690,14 +718,6 @@ public class JMXBasedURLActionDataListBuilderTest {
 		List<URLActionDataValidation> validations = actions.get(1).getValidations();
 		
 		Assert.assertEquals(1, validations.size());
-	}
-	
-	@Test(expected = MappingException.class)
-	public void testRegexExtractorImpossible() {
-		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath4, 
-				interpreter, actionBuilder, tmpDumpFolder);
-		jmxBasedBuilder.buildURLActionDataList();
-		// TODO expand, but, seriously like 10 files?
 	}
 	
 	@After
