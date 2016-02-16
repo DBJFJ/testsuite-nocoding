@@ -155,7 +155,7 @@ public class ParameterInterpreter extends Interpreter
         }
         return result;
     }
-
+    
     protected List<String> getPatternMatches(final String input)
     {
         final List<String> result = new ArrayList<String>();

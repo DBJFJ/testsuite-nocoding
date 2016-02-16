@@ -154,5 +154,4 @@ public class ParameterInterpreterTest
         Assert.assertEquals("TTe2t-TA12000",
                             interpreter.processDynamicData("T${java.text.MessageFormat.format(\"Te{0}t\", 2)}-T${java.text.MessageFormat.format(\"A{0}{1}\", 1, 2)}000"));
     }
-
 }
