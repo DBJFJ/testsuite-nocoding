@@ -3,8 +3,11 @@ package test.com.xceptance.xlt.common.util.action.data;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import bsh.EvalError;
 
 import com.xceptance.xlt.api.data.GeneralDataProvider;
 import com.xceptance.xlt.api.util.XltProperties;
@@ -124,5 +127,60 @@ public class URLActionDataValidationTest
                                                                        interpreter);
         @SuppressWarnings("unused")
 		final String validationMode = validation.getValidationMode();
+    }
+    
+    
+    /**
+     * Tests if the normal getters and the raw getters are working as they should.
+     * 
+     * @throws EvalError
+     */
+    @Test
+    public void testGetters() throws EvalError {
+    	String name = "name";
+    	String value = "value";
+    	String parName = "${name}";
+    	interpreter.set(name, value);
+    	
+    	String nameSMode = "nameSMode";
+    	String valueSMode = URLActionDataValidation.REGEXP;
+    	String parNameSMode = "${nameSMode}";
+    	interpreter.set(nameSMode, valueSMode);
+    	
+    	String nameSubSMode = "nameSubSMode";
+    	String valueSubSMode = URLActionDataValidation.REGEXGROUP;
+    	String parNameSubSMode = "${nameSubSMode}";
+    	interpreter.set(nameSubSMode, valueSubSMode);
+    	
+    	String nameVMode = "nameVMode";
+    	String valueVMode = URLActionDataValidation.MATCHES;
+    	String parNameVMode = "${nameVMode}";
+    	interpreter.set(nameVMode, valueVMode);
+    	
+    	URLActionDataValidation validation = new URLActionDataValidation("hi",
+    			parNameSMode, parName, 
+    			parNameSubSMode, parName, 
+    			parNameVMode, parName,
+    			interpreter);
+    	
+    	// test the normal methods
+    	Assert.assertEquals(valueSMode, validation.getSelectionMode());
+    	Assert.assertEquals(value, validation.getSelectionContent());
+    	
+    	Assert.assertEquals(valueSubSMode, validation.getSubSelectionMode());
+    	Assert.assertEquals(value, validation.getSubSelectionContent());
+    	
+    	Assert.assertEquals(valueVMode, validation.getValidationMode());
+    	Assert.assertEquals(value, validation.getValidationContent());
+    	
+    	// test the raw methods
+    	Assert.assertEquals(parNameSMode, validation.getRawSelectionMode());
+    	Assert.assertEquals(parName, validation.getRawSelectionContent());
+    	
+    	Assert.assertEquals(parNameSubSMode, validation.getRawSubSelectionMode());
+    	Assert.assertEquals(parName, validation.getRawSubSelectionContent());
+    	
+    	Assert.assertEquals(parNameVMode, validation.getRawValidationMode());
+    	Assert.assertEquals(parName, validation.getRawValidationContent());
     }
 }

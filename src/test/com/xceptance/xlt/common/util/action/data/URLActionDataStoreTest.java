@@ -7,9 +7,12 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import bsh.EvalError;
+
 import com.xceptance.xlt.api.data.GeneralDataProvider;
 import com.xceptance.xlt.api.util.XltProperties;
 import com.xceptance.xlt.common.util.action.data.URLActionDataStore;
+import com.xceptance.xlt.common.util.action.data.URLActionDataValidation;
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 
 public class URLActionDataStoreTest
@@ -162,4 +165,46 @@ public class URLActionDataStoreTest
 		Assert.assertEquals(store.getSubSelectionMode(), subSelectionMode);
 		Assert.assertEquals(store.getSubSelectionContent(), subSelectionContent);
 	}
+	
+	/**
+     * Tests if the normal getters and the raw getters are working as they should.
+     * 
+     * @throws EvalError
+     */
+    @Test
+    public void testGetters() throws EvalError {
+    	String name = "name";
+    	String value = "value";
+    	String parName = "${name}";
+    	interpreter.set(name, value);
+    	
+    	String nameSMode = "nameSMode";
+    	String valueSMode = URLActionDataValidation.REGEXP;
+    	String parNameSMode = "${nameSMode}";
+    	interpreter.set(nameSMode, valueSMode);
+    	
+    	String nameSubSMode = "nameSubSMode";
+    	String valueSubSMode = URLActionDataValidation.REGEXGROUP;
+    	String parNameSubSMode = "${nameSubSMode}";
+    	interpreter.set(nameSubSMode, valueSubSMode);
+    	   	
+    	URLActionDataStore store = new URLActionDataStore("hi",
+    			parNameSMode, parName, 
+    			parNameSubSMode, parName, 
+    			interpreter);
+    	
+    	// test the normal methods
+    	Assert.assertEquals(valueSMode, store.getSelectionMode());
+    	Assert.assertEquals(value, store.getSelectionContent());
+    	
+    	Assert.assertEquals(valueSubSMode, store.getSubSelectionMode());
+    	Assert.assertEquals(value, store.getSubSelectionContent());
+    	   	
+    	// test the raw methods
+    	Assert.assertEquals(parNameSMode, store.getRawSelectionMode());
+    	Assert.assertEquals(parName, store.getRawSelectionContent());
+    	
+    	Assert.assertEquals(parNameSubSMode, store.getRawSubSelectionMode());
+    	Assert.assertEquals(parName, store.getRawSubSelectionContent());
+    }
 }
