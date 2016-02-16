@@ -153,7 +153,7 @@ public class YAMLBasedDumper {
 			// get parameters
 			List<Map<String, Object>> parameterList = new ArrayList<>();
 			
-			List<NameValuePair> parameters = action.getParameters();
+			List<NameValuePair> parameters = action.getRawParameters();
 			for (NameValuePair parameter : parameters) {
 				LinkedHashMap<String, Object> parameterMap = new LinkedHashMap<String, Object>();
 				parameterMap.put(parameter.getName(), parameter.getValue());
@@ -165,7 +165,7 @@ public class YAMLBasedDumper {
 			// get Headers
 			List<Map<String, Object>> headerList = new ArrayList<>();
 			
-			List<NameValuePair> headers = action.getHeaders();
+			List<NameValuePair> headers = action.getRawHeaders();
 			for (NameValuePair header : headers) {
 				LinkedHashMap<String, Object> headerMap = new LinkedHashMap<String, Object>();
 				headerMap.put(header.getName(), header.getValue());
@@ -186,8 +186,8 @@ public class YAMLBasedDumper {
 				LinkedHashMap<String, Object> outerStoreMap = new LinkedHashMap<String, Object>();
 				LinkedHashMap<String, Object> innerStoreMap = new LinkedHashMap<String, Object>();
 				
-				putUnlessEmpty(innerStoreMap, store.getSelectionMode(), store.getSelectionContent());
-				putUnlessEmpty(innerStoreMap, store.getSubSelectionMode(), store.getSubSelectionContent());
+				putUnlessEmpty(innerStoreMap, store.getRawSelectionMode(), store.getRawSelectionContent());
+				putUnlessEmpty(innerStoreMap, store.getRawSubSelectionMode(), store.getRawSubSelectionContent());
 				
 				putUnlessEmpty(outerStoreMap, store.getName(), innerStoreMap);
 				addUnlessEmpty(storeVarsList, outerStoreMap);
@@ -203,9 +203,12 @@ public class YAMLBasedDumper {
 				LinkedHashMap<String, Object> outerValidationMap = new LinkedHashMap<String, Object>();
 				LinkedHashMap<String, Object> innerValidationMap = new LinkedHashMap<String, Object>();
 				
-				putUnlessEmpty(innerValidationMap, validation.getSelectionMode(), validation.getSelectionContent());
-				putUnlessEmpty(innerValidationMap, validation.getSubSelectionMode(), validation.getSubSelectionContent());
-				putUnlessEmpty(innerValidationMap, validation.getValidationMode(), validation.getValidationContent());
+				putUnlessEmpty(innerValidationMap, validation.getRawSelectionMode(), 
+														validation.getRawSelectionContent());
+				putUnlessEmpty(innerValidationMap, validation.getRawSubSelectionMode(), 
+														validation.getRawSubSelectionContent());
+				putUnlessEmpty(innerValidationMap, validation.getRawValidationMode(), 
+														validation.getRawValidationContent());
 				
 				putUnlessEmpty(outerValidationMap, validation.getName(), innerValidationMap);
 				addUnlessEmpty(validationsList, outerValidationMap);

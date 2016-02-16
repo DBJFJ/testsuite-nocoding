@@ -248,7 +248,6 @@ public class YAMLBasedURLActionDataListBuilderTest
                                                                                                     this.storeBuilder);
         final List<URLActionData> actions = listBuilder.buildURLActionDataList();
         Assert.assertFalse(actions.isEmpty());
-
     }
 
     @Test
@@ -262,5 +261,4 @@ public class YAMLBasedURLActionDataListBuilderTest
         @SuppressWarnings("unused")
 		final List<URLActionData> actions = listBuilder.buildURLActionDataList();
     }
-
 }
