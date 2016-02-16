@@ -32,7 +32,7 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  * files. <br/>
  * TSNC only implements a subset if Jmeters functions and of those only a subset is translated.
  * The tests are dumped into a YAML file in ./config/data before execution.
- * See the configuration file for details.
+ * See the documentation //TODO add link for details
  * <p>
  * On the technical side Jmeter saves it's tests in an xml file without a DTD.
  * This class parses the xml file using StAX. The various constants are the
@@ -77,7 +77,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String TNAME_REGEX_EXTRACT = "RegexExtractor";
 
 	/*
-	 * Jmeter supports a tree structure, but the elements below a certain node
+	 * Jmeter uses a tree structure, but the elements below a certain node
 	 * are not inside the xml tag in the xml file. Instead a hashtree tag
 	 * follows all tags with something below them in the tree structure. Inside
 	 * the hashtree tag are the nodes below the tag in question. For example: An
@@ -618,10 +618,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		try {
 			this.interpreter.set(nvp);
 		} catch (EvalError e) {
-			XltLogger.runTimeLogger.error("Coudn't set variable: " + argsName
-					+ "=" + argsValue); 
-			throw new MappingException("Coudn't set variable: " + argsName
-					+ "=" + argsValue);
+			String reason = "Coudn't set variable: " + argsName
+					+ "=" + argsValue;
+			logAndThrow(reason);
 		}
 	}
 
@@ -1257,7 +1256,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (selectionMode == null || validationMode == null) {
 
 				// this is impossible, don't create the validation
-				throw new MappingException();
+				String reason = "There was a problem in " + name;
+				logAndThrow(reason);
 			}
 
 			// In case selectionMode == VAR and validationMode == EXISTS, 
@@ -1319,8 +1319,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (selectionMode == null) {
 				selectionMode = VALIDATE_RESP_CODE;
 			} 
-			else { //TODO expand
-				throw new MappingException("Can't validate the response code of a variable.");
+			else { 
+				String reason = "Can't validate the response code of a variable.";
+				logAndThrow(reason);
 			}
 			break;
 			
@@ -1328,8 +1329,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			if (selectionMode == null) {
 				selectionMode = URLActionDataValidation.HEADER;
 			}  
-			else { //TODO expand
-				throw new MappingException("Can't validate the response header of a variable.");
+			else { 
+				String reason = "Can't validate the response header of a variable.";
+				logAndThrow(reason);
 			}
 			break;
 			
@@ -1337,24 +1339,18 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			
 		case CHAR_ASSERT_RESP_MESSAGE:
 			// can't validate the response message
-			XltLogger.runTimeLogger
-					.error("Coudn't translate assertion from Jmeter to TSNC: "
-							+ "Response Message can't be asserted");
-			throw new MappingException("Can't assert Response Message in TSNC");
+			String reason = "Can't assert Response Message in TSNC";
+			logAndThrow(reason);
 
 		case CHAR_ASSERT_URL:
 			// can't validate the url 
-			XltLogger.runTimeLogger
-					.error("Coudn't translate assertion from Jmeter to TSNC: "
-							+ "URL Sample can't be asserted");
-			throw new MappingException("Can't assert URL Sample in TSNC");
+			String s = "Can't assert URL Sample in TSNC";
+			logAndThrow(s);
 			
 		default:
 			// Something went wrong! 
-			XltLogger.runTimeLogger
-					.error("Coudn't detect selectionMode/ Response Field to Test");
-			throw new MappingException(
-					"Coudn't detect selectionMode/ Response Field to Test");
+			String message = "Coudn't detect selectionMode/ Response Field to Test";
+			logAndThrow(message);
 		}
 
 		return selectionMode;
@@ -1399,32 +1395,27 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		// option in TSNCs validations, log an error and throw an exception
 		case 5:
 			// Jmeter: Matches and Not.
-			XltLogger.runTimeLogger
-					.error("Can't map \"Not\" in the Response Assertion, that option"
-							+ "doesn't exist in TSNC.");
-			throw new MappingException();
+			String reason = "Can't map \"Not\" in the Response Assertion, that option "
+							+ "doesn't exist in TSNC.";
+			logAndThrow(reason);
 		case 6:
 			// Jmeter: Contains and Not.
-			XltLogger.runTimeLogger
-					.error("Can't map \"Not\" in the Response Assertion, that option"
-							+ "doesn't exist in TSNC.");
-			throw new MappingException();
+			String s = "Can't map \"Not\" in the Response Assertion, that option "
+					+ "doesn't exist in TSNC.";
+			logAndThrow(s);
 		case 12:
-			// Jmeter: Equal and Not.
-			XltLogger.runTimeLogger
-					.error("Can't map \"Not\" in the Response Assertion, that option"
-							+ "doesn't exist in TSNC.");
-			throw new MappingException();
+			String message = "Can't map \"Not\" in the Response Assertion, that option "
+					+ "doesn't exist in TSNC.";
+			logAndThrow(message);
 		case 20:
 			// Jmeter: Substring and Not.
-			XltLogger.runTimeLogger
-					.error("Can't map \"Not\" in the Response Assertion, that option"
-							+ "doesn't exist in TSNC.");
-			throw new MappingException();
+			String cause = "Can't map \"Not\" in the Response Assertion, that option "
+					+ "doesn't exist in TSNC.";
+			logAndThrow(cause);
 
 		default:
-			XltLogger.runTimeLogger.error("Coudn't detect validation mode in Jmeter");
-			throw new MappingException();
+			String string = "Coudn't detect validation mode in Jmeter";
+			logAndThrow(string);
 		}
 		return validationMode;
 	}
@@ -1509,33 +1500,44 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			
 		if (selectionMode.equals(URLActionDataValidation.HEADER)) {
 			
-			for (String validationContent : allValidationContent) {
+			for (int i = 0; i < allValidationContent.size(); i++) {
+				String validationContent = allValidationContent.get(i);
 				String[] header = validationContent.split(":");
 				
 				if (2 < header.length) {
-					throw new MappingException("Sorry, validation " + name +
-							" coudn't be created.");
+					
+					String reason = "Pattern to test against the Header in "
+							+ name
+							+ " coudn't be translated.";
+					logAndThrow(reason);
 				}
-				
 				if (header.length == 2) {
-					selectionContent = header[0];		// name
-					validationContent = header[1];		// value
+					// there's both a name and a value
 					
-					URLActionDataValidation validation = new URLActionDataValidation(
-							name, selectionMode, selectionContent, validationMode,
-							validationContent, interpreter);
-					actionBuilder.addValidation(validation);
-				}
-				
+					selectionContent = header[0];		// header name
+					validationContent = header[1];		// header value
+					validationMode = URLActionDataValidation.MATCHES;
+					
+					// for some reason Jmeter puts linebreaks here ...
+					if (i < allValidationContent.size()) {
+						validationContent = validationContent.trim();
+					}
+					
+				}			
 				if (header.length == 1) {
-					
 					// there's only a name (or a value, but there's no way to know which)
+					
 					selectionContent = header[0];
 					validationMode = URLActionDataValidation.EXISTS;
-					
-					// How does this work?
-					
+					validationContent = null;
 				}
+				
+				
+				
+				URLActionDataValidation validation = new URLActionDataValidation(
+						name, selectionMode, selectionContent, validationMode,
+						validationContent, interpreter);
+				actionBuilder.addValidation(validation);
 			}
 			return;
 		}
@@ -1627,16 +1629,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// exists if it should extract from a variable. 
 					// that's impossible in TSNC, so just log and throw.
 					
-					if (event.isCharacters()) {
-						XltLogger.runTimeLogger.error("Regex Extractor "
-								+ name
-								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.");
-						throw new MappingException("Regex Extractor "
-								+ name
-								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.");
-					}
+					String reason = "Regex Extractor "
+							+ name
+							+ " should extract from a variable. Since TSNC always extracts from "
+							+ "the first match. That is unfortunately impossible in TSNC.";
+					logAndThrow(reason);
 
 				default: {
 					break;
@@ -1762,15 +1759,10 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 											+ "TSNC. It will extract from the first match instead.");
 						}
 						if (1 < match) {
-							XltLogger.runTimeLogger
-									.error("Regex Extractor "
-											+ name
-											+ " should extract from a later match. Since TSNC always extracts from "
-											+ "the first match, that is impossible.");
-							throw new MappingException(
-									"Can only extract from first match. "
-											+ name
-											+ "intented to extract from a later match.");
+							String reason = "Can only extract from first match. "
+									+ name
+									+ "intented to extract from a later match.";
+							logAndThrow(reason);
 						}
 					}
 
@@ -1791,14 +1783,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// that's impossible in TSNC, so just log and throw.
 					
 					if (event.isCharacters()) {
-						XltLogger.runTimeLogger.error("Regex Extractor "
+						String reason = "Regex Extractor "
 								+ name
 								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.");
-						throw new MappingException("Regex Extractor "
-								+ name
-								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.");
+								+ "the first match. That is unfortunately impossible in TSNC.";
+						logAndThrow(reason);
 					}
 					
 				case ATTRV_REGEX_EXT_SCOPE:
@@ -1809,14 +1798,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					String content = getTagContent(event);
 					if ( !(content.equals("as document") || content.equals("unescaped") ||
 								content.equals("false")) ) {
-						XltLogger.runTimeLogger.error("Regex Extractor "
+						
+						String reason = "Regex Extractor "
 								+ name
-								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.");
-						throw new MappingException("Regex Extractor "
-								+ name
-								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.");
+								+ " should extract from something other then the response body";
+						logAndThrow(reason);
 					}
 
 				default: {
@@ -1831,12 +1817,11 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		// just extract the first one
 		String templates[] = group.split(Pattern.quote("$$"));
 		if (templates.length > 1) {
-			XltLogger.runTimeLogger.error("Regex Extractor "
+			
+			String reason = "Regex Extractor "
 					+ name
-					+ " should extract from a later match. Since TSNC always extracts from "
-					+ "the first match, that is impossible.");
-			throw new MappingException("Can only extract from first match. " + name
-					+ "intented to extract from a later match.");
+					+ " should extract to a more complicated template";
+			logAndThrow(reason);
 		}
 		group = templates[0];
 		group = group.replace("$", "");
@@ -1855,8 +1840,6 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		storeBuilder.setSubSelectionContent(subSelectionContent);
 		URLActionDataStore store = storeBuilder.build();
 		return store;
-		
-		// catch MappingException sometime TODO
 	}
 
 	/**
@@ -1957,5 +1940,22 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		public MappingException(String message, Throwable cause) {
 			super(message, cause);
 		}
+	}
+	
+	
+	/**
+	 * Takes a reason to abort as a string.
+	 * 
+	 * Logs an error and throws a {@link MappingException} with a 
+	 * general message + the given reason.
+	 * 
+	 * @param reason
+	 */
+	private void logAndThrow(String reason) {
+		String message = "Coudn't map the test case from Jmeter to TSNC." +
+					"Reason: " + reason;
+		
+		XltLogger.runTimeLogger.error(message);
+		throw new MappingException(message);
 	}
 }

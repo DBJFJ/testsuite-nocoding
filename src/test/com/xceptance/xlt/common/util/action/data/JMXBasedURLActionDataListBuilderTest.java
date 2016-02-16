@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -60,88 +61,13 @@ public class JMXBasedURLActionDataListBuilderTest {
     private ParameterInterpreter interpreter = new ParameterInterpreter(properties, dataProvider);
 	private final URLActionDataBuilder actionBuilder = new URLActionDataBuilder();
 	
-	String[][] selectionModeExpected = {
-			
-			// action 1
-			{"Var", "Var", "Regex", "Regex"},	
-			
-			// action 2
-			{"Regex", "Var"},					
-			
-			// action 3
-			{"Regex", "Var", "Var"},			
-			
-			// and so on
-			{"Regex", "Regex", "Regex"},		
-			{"Regex", "Var", "Var"},			
-			{"Regex", "Regex", "Regex"}			
-	};
+
 	
-	String[][] selectionContentExpected = {
-			
-			// action 1
-			{"justSomeDummyText", "justSomeDummyText",  ".*", ".*"},	
-			
-			// action 2
-			{".*", "${noHitsBanner}"},					
-			
-			// action 3
-			{".*", "${noHitsBanner}", "${suggestedSearchTerm}"},			
-			
-			// and so on
-			{".*", ".*", ".*"},		
-			{".*", "${noHitsBanner}", "${suggestedSearchTerm}"},			
-			{".*", ".*", ".*"}			
-	};
+
 	
-	String[][] validationModeExpected = {
-			
-			// action 0
-			{URLActionDataValidation.TEXT, URLActionDataValidation.MATCHES,
-				URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS},	
-			
-			// action 1
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES},					
-			
-			// action 2
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES,
-				URLActionDataValidation.MATCHES},			
-			
-			// and so on ...
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
-					URLActionDataValidation.EXISTS},
-					
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES, 
-						URLActionDataValidation.MATCHES},	
-						
-			{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
-							URLActionDataValidation.EXISTS}			
-	};
+
 	
-	String[][] validationContentExpected = {
-			
-			// action 1
-			{"justSomeDummyText", "justSomeD..myT.*",  "id=\"q\"", 
-				"<h1\\ class=\"primary-logo\">"},	
-			
-			// action 2
-			{"class=\"no-hits-banner\">", "We're sorry, no products were found for " +
-					"your search"},					
-			
-			// action 3
-			{"class=\"no-hits-banner\">", "We're sorry, no products were " +
-					"found for your search", "blue"},			
-			
-			// and so on
-			{"<span class=\"breadcrumb-element breadcrumb-result-text\">", 
-					"<div class=\"content-slot slot-grid-header\">", 
-						"<div class=\"results-hits\""},		
-			{"class=\"no-hits-banner\">", "We're sorry, no products were " +
-					"found for your search", "dress%20flora"},			
-			{"<span class=\"breadcrumb-element breadcrumb-result-text\">",
-						"<div class=\"content-slot slot-grid-header\">", 
-							"<div class=\"results-hits\""}			
-	};		
+		
 
 	@BeforeClass
 	public static void ensureTmpFolderNotExists() {
@@ -200,6 +126,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 			Assert.assertTrue(doesExist);
 		}
     }
+    
+
 	
 	/**
 	 * tests a known file. </br>
@@ -217,7 +145,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		
 		// check the number of actions 
 		int numberOfActions = actions.size();
-		Assert.assertEquals(8, numberOfActions);
+		Assert.assertEquals(9, numberOfActions);
 		
 		// check if the names of the actions are as expected
 		String[] namesExpected = {
@@ -484,13 +412,97 @@ public class JMXBasedURLActionDataListBuilderTest {
 	 */
 	@Test
 	public void testResponseAssertion() {
+	
+		String[][] selectionModeExpected = {
+				
+				// action 1
+				{"Var", "Var", "Regex", "Regex"},	
+				
+				// action 2
+				{"Regex", "Var"},					
+				
+				// action 3
+				{"Regex", "Var", "Var"},			
+				
+				// and so on
+				{"Regex", "Regex", "Regex"},		
+				{"Regex", "Var", "Var"},			
+				{"Regex", "Regex", "Regex"}			
+		};
+		
+		String[][] selectionContentExpected = {
+				
+				// action 1
+				{"justSomeDummyText", "justSomeDummyText",  ".*", ".*"},	
+				
+				// action 2
+				{".*", "${noHitsBanner}"},					
+				
+				// action 3
+				{".*", "${noHitsBanner}", "${suggestedSearchTerm}"},			
+				
+				// and so on
+				{".*", ".*", ".*"},		
+				{".*", "${noHitsBanner}", "${suggestedSearchTerm}"},			
+				{".*", ".*", ".*"}			
+		};
+		
+		String[][] validationModeExpected = {
+				
+				// action 0
+				{URLActionDataValidation.TEXT, URLActionDataValidation.MATCHES,
+					URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS},	
+				
+				// action 1
+				{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES},					
+				
+				// action 2
+				{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES,
+					URLActionDataValidation.MATCHES},			
+				
+				// and so on ...
+				{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
+						URLActionDataValidation.EXISTS},
+						
+				{URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES, 
+							URLActionDataValidation.MATCHES},	
+							
+				{URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, 
+								URLActionDataValidation.EXISTS}			
+		};
+		
+		String[][] validationContentExpected = {
+				
+				// action 1
+				{"justSomeDummyText", "justSomeD..myT.*",  "id=\"q\"", 
+					"<h1\\ class=\"primary-logo\">"},	
+				
+				// action 2
+				{"class=\"no-hits-banner\">", "We're sorry, no products were found for " +
+						"your search"},					
+				
+				// action 3
+				{"class=\"no-hits-banner\">", "We're sorry, no products were " +
+						"found for your search", "blue"},			
+				
+				// and so on
+				{"<span class=\"breadcrumb-element breadcrumb-result-text\">", 
+						"<div class=\"content-slot slot-grid-header\">", 
+							"<div class=\"results-hits\""},		
+				{"class=\"no-hits-banner\">", "We're sorry, no products were " +
+						"found for your search", "dress%20flora"},			
+				{"<span class=\"breadcrumb-element breadcrumb-result-text\">",
+							"<div class=\"content-slot slot-grid-header\">", 
+								"<div class=\"results-hits\""}			
+		};
+		
+		
 		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
 				interpreter, actionBuilder, tmpDumpFolder);
 		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
 		
-		
 		// tests the sample test case
-		for (int iAction = 0; iAction < actions.size(); iAction++) {
+		for (int iAction = 0; iAction < 6; iAction++) {
 			URLActionData action = actions.get(iAction);
 			List<URLActionDataValidation> validations = action.getValidations();
 			int length = validations.size();
@@ -518,7 +530,6 @@ public class JMXBasedURLActionDataListBuilderTest {
 				Assert.assertEquals(selectionContentExpected[iAction][iValidation], selectionContent);
 				
 				// assert validationMode
-				System.out.println("Action: " + iAction + ", " + validation.getName());
 				Assert.assertEquals(validationModeExpected[iAction][iValidation], validationMode);
 				
 				// assert validationContent
@@ -536,6 +547,51 @@ public class JMXBasedURLActionDataListBuilderTest {
 		int responseCode = action.getHttpResponseCode(); 
 		
 		Assert.assertEquals(responseCodeExpected, responseCode);
+	}
+	
+	/**
+	 * Tests if the response headers can be verified. Tests - woudn't you believe it - with a sample file.
+	 */
+	@Test
+	public void testValidateHeaders() {
+		
+		JMXBasedURLActionDataListBuilder jmxBasedBuilder = new JMXBasedURLActionDataListBuilder(filePath1, 
+				interpreter, actionBuilder, tmpDumpFolder);
+		List<URLActionData> actions = jmxBasedBuilder.buildURLActionDataList();
+		URLActionData action = actions.get(8);
+		List<URLActionDataValidation> validations = action.getValidations();
+		
+		String selectionModeExpected[] = {
+				"Header", "Header", "Header", "Header", "Header"
+		};
+		String selectionContentExpected[] = {
+				"Expires", "-1", "Expires", "Expires", "Vary"
+		};
+		String validationModeExpected[] = {
+				URLActionDataValidation.EXISTS, URLActionDataValidation.EXISTS, URLActionDataValidation.MATCHES, 
+				URLActionDataValidation.MATCHES, URLActionDataValidation.MATCHES
+		};
+		String validationContentExpected[] = {
+				null, null, "-1", "-1", "Accept-Encoding"
+		};
+		
+		for (int i = 0; i < 5; i++) {
+			URLActionDataValidation validation = validations.get(i);
+			
+			String selectionMode = validation.getSelectionMode();
+			String selectionContent = validation.getSelectionContent();
+			String validationMode = validation.getValidationMode();
+			String validationContent = validation.getValidationContent();
+			
+			Assert.assertEquals(selectionModeExpected[i], selectionMode);
+			
+			Assert.assertEquals(selectionContentExpected[i], selectionContent);
+			
+			Assert.assertEquals(validationModeExpected[i], validationMode);
+			
+			Assert.assertEquals(validationContentExpected[i], validationContent);
+		}
+		
 	}
 	
 	/**
@@ -644,8 +700,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 		// TODO expand, but, seriously like 10 files?
 	}
 	
-	@AfterClass
-	public static void deleteYamlFiles() throws IOException {
+	@After
+	public void deleteYamlFiles() throws IOException {
 		FileUtils.deleteDirectory(new File(tmpDumpFolder));
 	}
 }
