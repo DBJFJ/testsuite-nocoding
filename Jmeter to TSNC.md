@@ -176,7 +176,8 @@ Response Assertions are often aquivalent to TSNCs validations and can be transla
 *Response Field to Test:
     *Response Code -> Add an HttpResponseCode instead of a validation
     *Text Response, Document(text) -> take the whole content -> set selectionMode to Regex and set selectionContent to .+ to take everything unless it was set to VAR to validate a variable already
-    *URL Sampled, Response Message, Response Headers -> Can't be validated in TSNC, at least not that way -> log error, don't create the validations
+    *Response Headers -> very troublesome. Jmeter asserts a single pattern against the whole response header field while TSNC takes a Header with a certain name and validates that Headers value. The translation is lackluster, manual intervention may be needed. The translation works by splitting the pattern to test at ": " and taking the first part as the name and the second as the value. If ": " doesn't occur at all TSNC assumes the whole pattern is a single name. If ": " occurs more then once or the patterns a regular expression, it just doesn't work.
+    *URL Sampled, Response Message -> Can't be validated in TSNC, at least not that way -> log error, don't create the validations
     *URL Sampled, Response Message, Response Headers -> Impossible in TSNC -> log error, don't create the validations
 *Pattern Matching Rules:
     *Matches -> validationMode: Matches
