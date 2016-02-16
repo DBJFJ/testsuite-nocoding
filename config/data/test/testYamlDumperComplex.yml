@@ -1,24 +1,30 @@
 - Store : 
     - var1 : var2content
     - somewhere : cepta
-    
+    - par1 : parameter_1
+    - parValue1 : value_1
+    - header1 : header_1
+    - headerValue1 : value1
+    - selValue : content=(.+?)test
+    - subSelValue : 1
+    - valContent : \"BlazeMeter offers a cross-enterprise
 - Action : 
     Name : something test
     Request : 
         Url : https://blazemeter.com
         Method : GET
         Parameters : 
-            - parameter_1 : value_1         
+            - ${par1} : ${parValue1}         
             - parameter 2 : value_2
         Headers :                                      
-            - header_1 : value_1
+            - ${header1} : ${headerValue1}
             - header_2 : value_2
     Response :
         Httpcode : 200
         Store :
             - asdfghjkl : 
-                Regex : content=(.+?)test  
-                Group : 1   
+                Regex : ${selValue}
+                Group : ${subSelValue}
         Validate : 
             - validate with stored variable :
                 Var : ${asdfghjkl}
@@ -26,7 +32,7 @@
             - validate with group :
                 Regex : co(nt)ent=(.+?)test  
                 Group: 2 
-                Matches : \"BlazeMeter offers a cross-enterprise
+                Matches : ${valContent}
             - validate without group :
                 Regex : content=(.+?)test  
                 Matches : \"BlazeMeter offers a cross-enterprise
