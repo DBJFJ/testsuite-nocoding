@@ -1,6 +1,6 @@
-# Executing Tests From Jmeter On TSNC
+# Using Tests From Jmeter With TSNC
 
-You want to try out a new test tool, but you don't want to rewrite all your tests? You want to take a look at a new workflow and result browser without setting everything up by hand? TSNC provides a way to execute simple test cases created in Jmeter. It also translates them into it's native YAML format, so you can get used to TSNC syntax more easily.
+<add introduction>
 
 Not all tests can be translated, unfortunately TSNC and Jmeter work in different ways and Jmeter posesses far more features. FTP-Requests or Loops just do not exists in TSNC and it uses it's own result browser in place of Jmeters Listeners and it's own load test configurations. Only tests with the following structure can be translated:  
 
@@ -16,13 +16,21 @@ Not all tests can be translated, unfortunately TSNC and Jmeter work in different
         * (Variable Declarations) 
 * Thread Group ...
 
-## Setup
+## Executing Jmeter Tests
+
+You want to try out a new test tool, but you don't want to rewrite all your tests? You want to take a look at a new workflow and result browser without setting everything up by hand? TSNC provides a way to execute simple test cases created in Jmeter. It also translates them into it's native YAML format, so you can get used to TSNC syntax more easily. <add more and stuff>
 
 Go to the the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) page and follow the instructions. When you come to the Define the Test Case section, just copy over your test cases .jmx file  instead of creating a new one. Follow the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) guide further to create your wrapper class. Execute it.  
 
-The test should run out of the box in most cases. TSNC will also translate the test case to YAML and create new files for every Thread Group inside the test plan. They are saved in ./config/data/ with a name of "Test Plan-1.-Thread Group.yml". You can modify them, add them to the configurations and execute them separately. Please keep in mind TSNC will overwrite existing files without asking for clarification. You should definitely save important modifications under a different name.
+The test should run out of the box in most cases. Should the translation crash, your tests crash or should they refuse to work as they should, see the documentation below for possible reasons. Feel free to open an issue if a problem persists. 
 
-Should the translation crash, your tests crash or should they refuse to work as they should, see the documentation below for possible reasons. Feel free to open an issue if a problem persists. 
+## Converting Jmeter Tests to TSNCs YAML
+
+You have a batch of test cases and don't want to rewrite them by hand? TSNC offers a handy converter for the Jmeter -> TSNC translation. You can use it to translate a single test plan or a batch of test plans to TSNCs YAML files. Every Thread Group will be made into a single file. You can then add these files to your configuration settings, modify and run them by hand.
+
+<add instructions.>
+
+Executing a test from Jmeter uses the same backend translation as convertion, so the same limits apply. Read the documentation below and feel free to open an issue. 
 
 ## Possible errors from the translation
 

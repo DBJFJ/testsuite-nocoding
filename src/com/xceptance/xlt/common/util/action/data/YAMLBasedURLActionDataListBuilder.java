@@ -51,43 +51,43 @@ public class YAMLBasedURLActionDataListBuilder extends URLActionDataListBuilder
     /*
      * The Following are the allowed syntactic tags. See "syntax.yml" for the structure.
      */
-    protected static final String ACTION = "Action";
+    public static final String ACTION = "Action";
 
-    protected static final String REQUEST = "Request";
+    public static final String REQUEST = "Request";
 
-    protected static final String RESPONSE = "Response";
+    public static final String RESPONSE = "Response";
 
-    protected static final String BODY = "Body";
+    public static final String BODY = "Body";
 
-    protected static final String STORE = "Store";
+    public static final String STORE = "Store";
 
-    protected static final String SUBREQUESTS = "Subrequests";
+    public static final String SUBREQUESTS = "Subrequests";
 
-    protected static final String NAME = "Name";
+    public static final String NAME = "Name";
 
-    protected static final String URL = "Url";
+    public static final String URL = "Url";
 
-    protected static final String METHOD = "Method";
+    public static final String METHOD = "Method";
 
-    protected static final String ENCODEPARAMETERS = "Encode-Parameters";
+    public static final String ENCODEPARAMETERS = "Encode-Parameters";
 
-    protected static final String ENCODEBODY = "Encode-Body";
+    public static final String ENCODEBODY = "Encode-Body";
 
-    protected static final String XHR = "Xhr";
+    public static final String XHR = "Xhr";
 
-    protected static final String PARAMETERS = "Parameters";
+    public static final String PARAMETERS = "Parameters";
 
-    protected static final String HTTPCODE = "Httpcode";
+    public static final String HTTPCODE = "Httpcode";
 
-    protected static final String VALIDATION = "Validate";
+    public static final String VALIDATION = "Validate";
 
-    protected static final String STATIC = "Static";
+    public static final String STATIC = "Static";
 
-    protected static final String COOKIES = "Cookies";
+    public static final String COOKIES = "Cookies";
 
-    protected static final String HEADERS = "Headers";
+    public static final String HEADERS = "Headers";
 
-    protected static final String DELETE = "Delete";
+    public static final String DELETE = "Delete";
 
     /**
      * Default static URLs
