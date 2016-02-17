@@ -23,7 +23,12 @@ import com.xceptance.xlt.common.util.action.data.YAMLBasedURLActionDataListBuild
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 
 
-
+/**
+ * Tests the {@link YAMLBasedDumper} with example files.
+ * 
+ * @author daniel
+ *
+ */
 public class YAMLBasedDumperTest {
 
     private final String path = "./config/data/test/";
@@ -42,7 +47,9 @@ public class YAMLBasedDumperTest {
     private final URLActionDataStoreBuilder storeBuilder = new URLActionDataStoreBuilder();
     private final URLActionDataValidationBuilder validationBuilder = new URLActionDataValidationBuilder();
 
-    
+    /**
+     * Creates the interpreter.
+     */
     @Before
     public void setup()
     {
@@ -67,15 +74,15 @@ public class YAMLBasedDumperTest {
 		}	
 	
 	/**
-	 * Tests if a complicated example test case is correctly dumped. Tests with a simple example test file 
-	 * and checks the resulting file against an example dump that was manually checked. </br>
+	 * Tests if a complicated example test case is correctly dumped. Tests with a complex example test file 
+	 * and checks the resulting file against an complex dump that was manually checked. </br>
 	 * Also feeds the dump back into the {@link YAMLBasedURLActionDataListBuilder} and checks if it remains
 	 * constant. 
 	 * @throws IOException 
 	 * 
 	 */
 	@Test
-	public void testComlexDump() throws IOException {
+	public void testComplexDump() throws IOException {
 			testYamlWithDump(complexTest, complexDump);
 		}	
 
@@ -83,13 +90,14 @@ public class YAMLBasedDumperTest {
 	 * Checks if the a the given yaml file, after being constructed by the 
 	 * {@link YAMLBasedURLActionDataListBuilder} and dumped by the {@link YAMLBasedDumper} 
 	 * matches the given dump. Also tests if the dump stays constant over multiple 
-	 * construct - dump rotations. 
+	 * construct - dump rotations. </br>
+	 * Used for the actual tests.
 	 * 
 	 * @param yamlFile
 	 * @param dump
 	 * @throws IOException
 	 */
-	public void testYamlWithDump(String yamlFile, String dump) throws IOException {
+	private void testYamlWithDump(String yamlFile, String dump) throws IOException {
 		
 		// check if the first dump is as expected
 		YAMLBasedURLActionDataListBuilder builder1 = new YAMLBasedURLActionDataListBuilder(yamlFile,

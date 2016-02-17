@@ -30,9 +30,9 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 /**
  * Implementation of the {@link URLActionDataListBuilder} for Jmeters .jmx
  * files. <br/>
- * TSNC only implements a subset if Jmeters functions and of those only a subset is translated.
+ * TSNC only implements a subset of Jmeters functions and of those only a subset is translated.
  * The tests are dumped into a YAML file in ./config/data before execution.
- * See the documentation //TODO add link for details
+ * See the documentation file for details
  * <p>
  * On the technical side Jmeter saves it's tests in an xml file without a DTD.
  * This class parses the xml file using StAX. The various constants are the
@@ -45,40 +45,53 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * The following constant are used for the tagnames in Jmeter. For example,
 	 * in <Arguments ...> 'Arguments' is the tag name.
 	 * 
-	 * Their names follow the theme T (for tag) + NAME "_" + abbreviation of
-	 * their function. An "S" at the end signifies plural. Example: TNAME_VARS
-	 * for tagNameVariables. Underlines are used for readability.
+	 * The names follow the pattern T (for tag) + NAME + abbreviation of
+	 * their function. An "S" at the end signifies plural. 
+	 * Underscores are used for readability.
+	 * 
+	 * Example: TNAME_VARS for tagNameVariables. 
 	 */
 
+	// General ...
 	private final String TNAME_TEST_PLAN = "TestPlan";
 	
-
-	
 	private final String TNAME_THREAD_GROUP = "ThreadGroup";
+	
+	private final String TNAME_TEST_CONFIG = "ConfigTestElement";
+	
+	// Action 
 
 	private final String TNAME_ACTION = "HTTPSamplerProxy";
-
+	
+	// Variables ...
 	private final String TNAME_VARS = "Arguments";
 
 	private final String TNAME_VAR = "elementProp";
 
+	// Parameters and Headers ...
 	private final String TNAME_PARAMS = "collectionProp";
 
 	private final String TNAME_PARAM = "elementProp";
+	
+	private final String TNAME_HEADERS = "HeaderManager";
 
+	private final String TNAME_HEADER = "elementProp";
+
+	// Extractors ...
+	private final String TNAME_XPATH_EXTRACT = "XPathExtractor";
+
+	private final String TNAME_REGEX_EXTRACT = "RegexExtractor";
+	
+	// Response Assertion ...
 	private final String TNAME_ASSERT_RESP = "ResponseAssertion";
 
 	private final String TNAME_ASSERT_ALL_VALUES = "collectionProp";
 
 	private final String TNAME_ASSERT_ONE_CONTENT = "stringProp";
 
-	private final String TNAME_XPATH_EXTRACT = "XPathExtractor";
-
-	private final String TNAME_REGEX_EXTRACT = "RegexExtractor";
-
 	/*
 	 * Jmeter uses a tree structure, but the elements below a certain node
-	 * are not inside the xml tag in the xml file. Instead a hashtree tag
+	 * are not inside the xml tag in the .jmx file. Instead a hashtree tag
 	 * follows all tags with something below them in the tree structure. Inside
 	 * the hashtree tag are the nodes below the tag in question. For example: An
 	 * action which contains an assertion
@@ -92,12 +105,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 */
 	private final String TNAME_CONTENT = "hashTree";
 
-	private final String TNAME_TEST_CONFIG = "ConfigTestElement";
-
-	private final String TNAME_HEADERS = "HeaderManager";
-
-	private final String TNAME_HEADER = "elementProp";
-
+	
 	/*
 	 * <p>The following constants are used for the attribute names in Jmeter.
 	 * For example, in <HTTPSamplerProxy guiclass="HttpTestSampleGui"
@@ -106,10 +114,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * 'testname' is the attribute name for the name of the attribute which
 	 * defines the action name.
 	 * 
-	 * Their names follow the theme ATTR (for attribute) + N (for name) +
+	 * The names follow the pattern ATTR (for attribute) + N (for name) +
 	 * abbreviation of their function. An "S" at the end signifies plural.
-	 * Example: ATTRNACTIONNAME for attributeNameActionName.
+	 * Underscores are used for readability.
+	 * 
+	 * Example: ATTRN_ACTION_NAME for attributeNameActionName.
 	 */
+
+	private final String ATTRN_TESTPLAN_NAME = "testname";
 
 	/*
 	 * The following is a name attribute often used to identify what kind of
@@ -122,8 +134,6 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * name="HTTPSampler.protocol"></stringProp>
 	 */
 	
-	private final String ATTRN_TESTPLAN_NAME = "testname";
-	
 	private final String ATTRN_NAME = "name";
 
 	private final String ATTRN_ACTION_NAME = "testname";
@@ -133,17 +143,21 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String ATTRN_ELE_TYPE = "elementType";
 
 	/*
-	 * The following constant are used for the attribute values in Jmeter. For
+	 * The following constants are used for the attribute values in Jmeter. For
 	 * example, in <stringProp
 	 * name="HTTPSampler.domain">${host}/search</stringProp> 'stringProp' is the
 	 * tag name, 'name' an attribute name and 'HTTPSampler.domain' an attribute
 	 * value.
 	 * 
-	 * Their names follow the theme ATTR (for attribute) + V (for value) +
-	 * abbreviation of their function. An "S" at the end signifies plural.
-	 * Example: ATTRVACTIONURL for attributeValueActionUrl.
+	 * Their names follow the pattern ATTR (for attribute) + V (for value) +
+	 * abbreviation of their function. An "S" at the end signifies plural. 
+	 * Underscores are used for readability.
+	 * 
+	 * Example: ATTRV_ACTION_URL for attributeValueActionUrl.
 	 */
 
+	// Various attributes of an action ...
+	
 	private final String ATTRV_ACTION_PROTOC = "HTTPSampler.protocol";
 
 	private final String ATTRV_ACTION_WEBSITE = "HTTPSampler.domain";
@@ -152,6 +166,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	private final String ATTRV_ACTION_METHOD = "HTTPSampler.method";
 
+	// variables and parameters ...
+	
 	private final String ATTRV_ELE_ISPARAM = "HTTPArgument";
 
 	private final String ATTRV_ACTION_PARAM = "Arguments.arguments";
@@ -181,6 +197,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String ATTRV_ASSERT_IGNORE_STATUS = "Assertion.assume_success";
 
 	// XPath Extractor ...
+	
 	private final String ATTRV_XPATH_EXT_REFNAME = "XPathExtractor.refname";
 
 	private final String ATTRV_XPATH_EXT_XPATH = "XPathExtractor.xpathQuery";
@@ -188,6 +205,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String ATTRV_XPath_EXT_FROM_VAR = "Scope.variable";
 	
 	// Regex Extractor ...
+	
 	private final String ATTRV_REGEX_EXT_REFNAME = "RegexExtractor.refname";
 
 	private final String ATTRV_REGEX_EXT_REGEX = "RegexExtractor.regex";
@@ -199,8 +217,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	private final String ATTRV_REGEX_EXT_FROM_VAR = "Scope.variable";
 	
 	/**
-	 * Determines whether to extract from the message, just the response text, 
-	 * the resp. code.... IE an exception flag. 
+	 * Determines whether to extract from the resonse message, just the response body, 
+	 * the resp. code or something else ... 
 	 */
 	private final String ATTRV_REGEX_EXT_SCOPE = "RegexExtractor.useHeaders";
 
@@ -209,6 +227,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * character parts of the xml. For example in <stringProp
 	 * name="XPathExtractor.refname">noHitsBanner</stringProp> 'noHisBanner'
 	 * would be in the character part of the XML.
+	 * 
+	 * The names follow the pattern CHAR + theme + abbreviation of their function.
+	 * Underscores are used for readability.
 	 */
 
 	private final String CHAR_ASSERT_RESP_HEADER = "Assertion.response_headers";
@@ -223,15 +244,15 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	private final String CHAR_ASSERT_URL = "Assertion.sample_label";
 
-	// now finally all the xml constants used in this class are defined ...
+	// finally all the xml constants used in this class are defined ...
 
-	/*
+	/**
 	 * if the getAttributeValue(ATTRNNAME) method was used but the attribute
 	 * wasn't found, it will return this value instead
 	 */
 	private final String NOT_FOUND = "Attribute not found";
 
-	/*
+	/**
 	 * If the respnse code should be validated (instead of the response data or
 	 * the response header), the selectionMode is temporarily set to this
 	 */
@@ -253,7 +274,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/**
 	 * A constructor where you can specify the folder in which the constructed
-	 * yaml files are dumped
+	 * yaml files are dumped. Very handy for tests.
 	 * 
 	 * @param filePath
 	 *            the path to he Jmeter file to parse
@@ -279,7 +300,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/**
 	 * A constructor where you can't specify the folder in which the constructed
-	 * yaml files are dumped, it will just use the default.
+	 * yaml files are dumped, it will just use the default. Similar to the 
+	 * {@link YAMLBasedURLActionDataListBuilder}.
 	 * 
 	 * @param filePath
 	 *            the path to he Jmeter file to parse
@@ -312,8 +334,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	public List<URLActionData> buildURLActionDataList() {
 
 		// use an index, so the yaml files are chronologically ordered and won't
-		// overwrite
-		// each other if the Thread Groups happen to have the same name.
+		// overwrite each other if the Thread Groups happen to have the same name.
 		int index = 1;
 		String nameTPlan = null;
 		XltLogger.runTimeLogger
@@ -377,7 +398,14 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 		return actions;
 	}
-
+	
+	/**
+	 * Reads the user defined variables defined inside the Test Plan element.
+	 * 
+	 * @param reader
+	 * @param interpreter
+	 * @throws XMLStreamException
+	 */
 	private void readVarsInTestPlan(XMLEventReader reader,
 			ParameterInterpreter interpreter) throws XMLStreamException {
 		while (true) {
@@ -433,15 +461,12 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 			// many of Jmeters Load Test Configurations are here
 		}
 
-		// read the content of the ThreadGroup
-		// the first tag should be right here, so there is no need to look for
-		// it
+		// read the content of the ThreadGroup the first tag should be right here, 
+		// so there is no need to look for it
 
 		// Increment for every TNAME_CONTENT tag that opens, decrement for every
-		// TNAME_CONTENT
-		// tag that closes. Exit when zero is reached. (To make sure you exit
-		// with the right
-		// tag.)
+		// TNAME_CONTENT tag that closes. Exit when zero is reached. (To make sure you exit
+		// with the right tag.)
 		int treeLevel = 0;
 		while (true) {
 			XMLEvent event = reader.nextEvent();
@@ -489,7 +514,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 				case TNAME_ACTION: {
 
 					// an TNAME_ACTION is aquivalent to an HttpRequest
-					// is aquivalent to an action get and set the testname
+					// is aquivalent to an action. get and set the testname
 					String actionName = getAttributeValue(ATTRN_ACTION_NAME, se);
 					URLActionData action = readAction(reader, actionBuilder,
 							actionName);
@@ -625,8 +650,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	}
 
 	/**
-	 * Reads the default values that can be read. Which is to say the default
-	 * protocol. Is called inside of {@link #readThreadGroup}.
+	 * Reads the Http defaults that can be read. Is called inside of {@link #readThreadGroup}.
 	 * 
 	 * @param reader
 	 *            the XMLEventReader with it's position.
@@ -721,7 +745,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/**
 	 * Called in {@link #readHeaders}. Reads a single header and returns it as a
-	 * NameValuePair
+	 * NameValuePair.
 	 * 
 	 * @param reader
 	 *            the XMLEventReader with it's position
@@ -771,7 +795,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	/**
 	 * Is called when the main parsing method {@link #readThreadGroup} comes
 	 * upon a StartElement for an action {@link #TNAME_ACTION}. Parses the file
-	 * and creates the action with the appropriate properties Returns the action
+	 * and creates the action with the appropriate properties. Returns the action
 	 * when it comes upon the EndElement.
 	 * 
 	 * @param reader
@@ -1152,7 +1176,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * Reads a single ResponseAssertion and translates it into
 	 * {@link #URLActionDataValidation} objects. Adds these validations to the
 	 * {@link #URLActionDataBuilder}</br> (Or adds an HttpResponceCode to the
-	 * actionBuilder if a Response Code should be asserted.
+	 * actionBuilder if a Response Code should be asserted).
 	 * 
 	 * @param name
 	 *            the name of the validation(s)
@@ -1282,7 +1306,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 	/**
 	 * Maps the value from Jmeters Pattern Matching Rules to TSNCs
-	 * validationMode. Called in {@link #readResponseAssertion}. </br> 
+	 * selectionMode. Called in {@link #readResponseAssertion}. </br> 
 	 * 
 	 * @param selectionModeInJmt
 	 *            the rough aquivalent to the selectionMode in Jmeter, an
@@ -1359,10 +1383,9 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	/**
 	 * Maps the value from Jmeters Pattern Matching Rules to TSNCs
 	 * validationMode. Should be called in {@link #readResponseAssertion}. The
-	 * validationMode includes a "not" option in Jmeter which is just not there
-	 * in TSNC. If the integer value corresponds to that "not", throw an
-	 * exception. Also throw an exception in the default case, better safe then
-	 * sorry. 
+	 * validationMode in Jmeter has a few options that just arn't possible in TSNC.
+	 * Throws a {@link MappingException} if it comes upon one. Also throws one if 
+	 * it doesn't recognize one, though that should never happen.
 	 * 
 	 * @param valModeInInt
 	 *            the rough aquivalent to TSNC validationMode in Jmeter. An
@@ -1472,15 +1495,22 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	/**
 	 * Builds the {@link URLActionDataValidation} objects from the given inputs
 	 * and adds them to the actionBuilder. Should be called in
-	 * {@link #readResponseAssertion}. </br>
+	 * {@link #readResponseAssertion}. 
 	 * 
+	 * <p>
 	 * Parameters are the necessary parameters to construct an
-	 * {@link URLActionDataValidation} object and the actionBuilder. </br>
+	 * {@link URLActionDataValidation} object and the actionBuilder. 
+	 * </p>
 	 * 
-	 * The parameters for the selectionMode and/or the selectionContent can be
-	 * null. In that case the the method sets the selectionMode to
-	 * {@link URLActionDataValidation#REGEXP} and the selectionContent to ".*",
+	 * <p> 
+	 * Uses a few ifs for exceptional validations, like the HttpResponceCode, 
+	 * Headers or Variables.
+	 * </p>
+	 * 
+	 * <p>
+	 * The selectionContent can be null. In that case set it to ".*",
 	 * ie everything.
+	 * </p>
 	 * 
 	 * @param name
 	 * @param selectionMode
@@ -1652,28 +1682,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	 * Should be called when the {@link #readActionContent} method comes upon a
 	 * {@link TNAME_REGEX_EXTRACT} tag. Reads until the end of the
 	 * {@link TNAME_REGEX_EXTRACT} tag and returns an URLActionDataStore object.
-	 * </br>
-	 * 
-	 * <p>
-	 * In Jmeter one can specify which match to extract, which groups inside
-	 * that match and in which order. Example: </br> RegEx: |Reg (.+?) r Ex
-	 * (.+?) es (.+?) on| </br> Text: |Reg 11 r Ex 12 es 13 on| |Reg 21 r Ex 22
-	 * es 23 on| |Reg 31 r Ex 32 es 33 on| </br> A template (=group) could be
-	 * $2$$1$. In that case, it would extract everything in the second group
-	 * followed by everything in the first group --> 1211. That is not possible
-	 * in TSNC. If more then one value should be extracted, TSNC will log a
-	 * warning and extract only the first one. </br>
-	 * </p>
-	 * <p>
-	 * Similarly it is possible to specify in Jmeter if the group from the
-	 * first, second or third match should extracted. <br>
-	 * Example: Template: $2$, Match: 2 --> 22 </br> That option doesn't exist
-	 * here, TSNC will always extract from the first match. If it should extract
-	 * from another, it will log an error and skip the regular expression
-	 * extractor. If it should extract from a random match (Match=0), it log a
-	 * warning and extract from the first one.
-	 * </p>
-	 * 
+	 *  
 	 * @param selectionMode
 	 * @param reader
 	 * @param storeBuilder
@@ -1897,7 +1906,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 	/**
 	 * Gets the content of a tag, for example: {@code<tag>content<tag>} -->
 	 * "content". Will log a warning if the tag was empty: {@code<tag></tag>}
-	 * --> log warning and return warning.</br> Convenience method.
+	 * --> log warning and return a warning. String.</br> 
+	 * Convenience method.
 	 * 
 	 * @param event
 	 *            the character event aquivalent to the content of the tag

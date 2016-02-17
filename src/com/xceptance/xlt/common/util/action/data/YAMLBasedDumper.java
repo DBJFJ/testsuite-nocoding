@@ -42,15 +42,15 @@ public class YAMLBasedDumper {
 	 * Dump the given list of {@link URLActionData) into the given file in yaml.
 	 * Uses snakeyaml for the dumping, and {@link #restructureActionListForDumping(List)} 
 	 * to bring the data into a format snakeyaml can use.
-	 * </br>
+	 * <p>
 	 * Since the method is used in the {@link JMXBasedURLActionDataListBuilder} it doesn't support attributes 
-	 * that arn't supported in the {@link JMXBasedURLActionDataListBuilder}. The formatting causes some slight differences:
-	 * The indention may be odd at times especially with dashes and there's no whitespace 
-	 * in front of colons. </br>
-	 * If variables were defined at two different times (not inside actions, but inside the main test case), the 
+	 * that arn't supported in the {@link JMXBasedURLActionDataListBuilder}. The formatting causes some slight 
+	 * differences: The indention may be odd at times especially with dashes and there's no whitespace 
+	 * in front of colons. But it is consistent and viable yaml.</br>
+	 * If variables were defined at two different places (not inside actions, but inside the main test case), the 
 	 * dumper will put both of them at the top. </br>
 	 * Logs an info and overwrites the dumpfile if it already exists.
-	 *  
+	 *  </p>
 	 * @param file 
 	 * @param actions 
 	 * @throws IOException 
@@ -88,7 +88,7 @@ public class YAMLBasedDumper {
 	/**
 	 * <p>
 	 * Takes a list of {@link URLActionData} and transforms it into a nested list full of 
-	 * {@link LinkedHashMap}s so the list can be processed and dumped with ({@link #Yaml SnakeYaml}). 
+	 * so the map can be processed and dumped with ({@link #Yaml SnakeYaml}). 
 	 * </p>
 	 * The method creates a horrible mix of nested {@link LinkedHashMap}s and {@link List}s, because that's what 
 	 * snakeyaml needs to create the correct syntax. Take a look at the yaml cheatsheet to get an idea of the 
@@ -225,7 +225,7 @@ public class YAMLBasedDumper {
 	
 	/**
 	 * The usual put method except it checks if the key or the object to put in are empty 
-	 * or null or the key is "null" before putting. If they are, it doesn't put and just
+	 * or null before putting. Also checks if the key is "null". If they are, it doesn't put and just
 	 * returns the given map. Also logs a debug message if the object is null while the 
 	 * key isn't. 
 	 * 
@@ -252,16 +252,15 @@ public class YAMLBasedDumper {
 			}
 		}
 		
-		// already, there's actually a value
+		// alright, there's actually a value
 		map.put(key, value);
 		return;
 	}
 	
 	
 	/**
-	 * The usual add method except it checks if the object to add in are empty 
-	 * or null or the key is "null" before putting. If they are, it doesn't put and just
-	 * returns the given list. 
+	 * The usual add method except it checks if the map to add is empty or null. 
+	 * If it is, it doesn't put and just returns the given list. 
 	 * 
 	 * @param map
 	 * @param key

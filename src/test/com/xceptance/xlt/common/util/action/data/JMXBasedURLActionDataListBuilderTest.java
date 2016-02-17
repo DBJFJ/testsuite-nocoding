@@ -34,11 +34,7 @@ import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
  * <ul>
  * <li>tests output for an unexisting file 
  * <li>tests output for an empty file	
- * <li>tests with example test case:
- * <li>tests if variables are stored correctly
- * <li>tests if actions (Http Requests) are executed correctly
- * <li>tests if XPath extractions work
- * <li>and if ResponseAssertions work 
+ * <li>tests with many example test files ...
  * </ul>
  */
 public class JMXBasedURLActionDataListBuilderTest {
@@ -59,14 +55,6 @@ public class JMXBasedURLActionDataListBuilderTest {
 	
     private ParameterInterpreter interpreter = new ParameterInterpreter(properties, dataProvider);
 	private final URLActionDataBuilder actionBuilder = new URLActionDataBuilder();
-	
-
-	
-
-	
-
-	
-		
 
 	@BeforeClass
 	public static void ensureTmpFolderNotExists() {
@@ -384,30 +372,8 @@ public class JMXBasedURLActionDataListBuilderTest {
 	}
 	
 	/**
-	 * Checks if the ResponseAssertions were read correctly. <br/>
-	 * The mapping should be:
-	 * <ul>
-	 * <li> Main sample and sub-samples/ Main sample only/ Sub-samples only -> Regex with .*
-	 * <li> Text Response/ Document(text) -> Regex with .*
-	 * <li> Jmeter Variable -> Var with ${variable} 
-	 * 
-	 * <li> URL Sampled -> can't be mapped or isn't implemented yet
-	 * <li> Response Message -> can't be matched or isn't implemented yet
-	 * <li> Response Code -> Http Response Code (not a validation object in TSNC)	
-	 * <li> Response Headers -> can't be mapped easily 
-	 * <li> Ignore Status -> can't be mapped 
-	 * </ul>
-	 * 
-	 * Pattern Matching Rules are mapped to TSNCs validationMode
-	 * <ul>
-	 * <li> Contains -> Exists
-	 * <li> Matches -> Matches
-	 * <li> Equals -> Text
-	 * <li> Substring -> Exists
-	 * <li> Not -> can't be matched
-	 * </ul>
-	 * <li>Patterns to Test -> validationContent. If there are multiple patterns to test 
-	 * TSNC makes multiple validations.
+	 * Checks if the ResponseAssertions were read correctly. 
+	 * Tests with an example test file. See the documentation for the intended mapping.
 	 */
 	@Test
 	public void testResponseAssertion() {
@@ -643,7 +609,7 @@ public class JMXBasedURLActionDataListBuilderTest {
 		}
 	}
 	
-	/*
+	/**
 	 * Tests a Regex extractor that can be mapped with a sample file.
 	 */
 	@Test
