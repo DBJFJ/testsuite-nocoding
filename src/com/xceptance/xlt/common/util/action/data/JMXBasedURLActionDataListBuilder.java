@@ -350,7 +350,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 
 						// dump it into a yaml file
 						Path dumpPath = Paths.get(dumpThere + "/" + nameTPlan + "-" +
-								index + "-"	+ nameTGroup + ".yml");
+								index + ".-"	+ nameTGroup + ".yml");
 						index++;
 						try {
 							YAMLBasedDumper.dumpActionsYaml(testCaseActions,
@@ -1629,7 +1629,7 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					// exists if it should extract from a variable. 
 					// that's impossible in TSNC, so just log and throw.
 					
-					String reason = "Regex Extractor "
+					String reason = "XPath Extractor "
 							+ name
 							+ " should extract from a variable. Since TSNC always extracts from "
 							+ "the first match. That is unfortunately impossible in TSNC.";
@@ -1785,13 +1785,12 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 					if (event.isCharacters()) {
 						String reason = "Regex Extractor "
 								+ name
-								+ " should extract from a variable. Since TSNC always extracts from "
-								+ "the first match. That is unfortunately impossible in TSNC.";
+								+ " should extract from a variable. That is unfortunately impossible in TSNC.";
 						logAndThrow(reason);
 					}
 					
 				case ATTRV_REGEX_EXT_SCOPE:
-					// if we should extract from header, code, URL or anything but the body
+					// if we should extract from header, code, URL or anything but the body.
 					// we can't, so just log and throw
 					
 					event = reader.nextEvent();

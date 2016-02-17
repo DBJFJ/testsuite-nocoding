@@ -96,7 +96,7 @@ public class URLActionData
      * Expected HttpResponseCode. <br>
      * Default : '200'.
      */
-    private String httpResponceCode;
+    private String httpResponseCode;
 
     /**
      * <p>
@@ -331,7 +331,7 @@ public class URLActionData
     {
         if (httpResponceCode != null)
         {
-            this.httpResponceCode = httpResponceCode;
+            this.httpResponseCode = httpResponceCode;
             XltLogger.runTimeLogger.debug(getSetTagToValueMessage("HttpResponceCode",
                                                                   httpResponceCode));
         }
@@ -346,9 +346,9 @@ public class URLActionData
     {
         if (httpResponceCode != null)
         {
-            this.httpResponceCode = httpResponceCode.toString();
+            this.httpResponseCode = httpResponceCode.toString();
             XltLogger.runTimeLogger.debug(getSetTagToValueMessage("HttpResponceCode",
-                                                                  this.httpResponceCode));
+                                                                  this.httpResponseCode));
         }
     }
 
@@ -651,23 +651,23 @@ public class URLActionData
     }
 
     /**
-     * @return {@link #httpResponceCode}, after its dynamic interpretation via {@link #interpreter}.
+     * @return {@link #httpResponseCode}, after its dynamic interpretation via {@link #interpreter}.
      */
     public HttpResponseCodeValidator getResponseCodeValidator()
     {
-        final String dynmaicResponseCode = interpreter.processDynamicData(this.httpResponceCode);
-        final HttpResponseCodeValidator result = StringUtils.isNotBlank(dynmaicResponseCode) ? new HttpResponseCodeValidator(Integer.parseInt(dynmaicResponseCode))
+        final String dynamicResponseCode = interpreter.processDynamicData(this.httpResponseCode);
+        final HttpResponseCodeValidator result = StringUtils.isNotBlank(dynamicResponseCode) ? new HttpResponseCodeValidator(Integer.parseInt(dynamicResponseCode))
                                                                                             : HttpResponseCodeValidator.getInstance();
         return result;
     }
 
     /**
-     * @return {@link #httpResponceCode}, after its dynamic interpretation via {@link #interpreter}.
+     * @return {@link #httpResponseCode}, after its dynamic interpretation via {@link #interpreter}.
      */
     public Integer getHttpResponseCode()
     {
-        final String dynmaicResponseCode = interpreter.processDynamicData(this.httpResponceCode);
-        final Integer resultInteger = dynmaicResponseCode != null ? Integer.parseInt(dynmaicResponseCode)
+        final String dynamicResponseCode = interpreter.processDynamicData(this.httpResponseCode);
+        final Integer resultInteger = dynamicResponseCode != null ? Integer.parseInt(dynamicResponseCode)
                                                                  : 200;
         return resultInteger;
     }
@@ -757,6 +757,14 @@ public class URLActionData
         return result;
 
     }
+    
+    /**
+     * @return {@link #parameters}, without dynamic interpretation via {@link #interpreter}.
+     */
+    public List<NameValuePair> getRawParameters()
+    {
+        return this.parameters;
+    }
 
     /**
      * Sends nvp through the {@link #interpreter}.
@@ -798,6 +806,14 @@ public class URLActionData
             result.add(getDynamicPair(pair));
         }
         return result;
+    }
+    
+    /**
+     * @return {@link #headers}, without dynamic interpretation via {@link #interpreter}.
+     */
+    public List<NameValuePair> getRawHeaders()
+    {
+        return this.headers;
     }
 
     /**
