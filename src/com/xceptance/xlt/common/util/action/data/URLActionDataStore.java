@@ -316,41 +316,6 @@ public class URLActionDataStore
 	}
 
 	/**
-	 * @return {@link #selectionMode }, without dynamic interpretation via the
-	 *         {@link #interpreter}.
-	 */
-	public String getRawSelectionMode()
-	{
-		final String dynamicSelectionMode = interpreter.processDynamicData(this.selectionMode);
-		if (!isPermittedSelectionMode(dynamicSelectionMode))
-		{
-			throw new IllegalArgumentException(getIllegalValueForTagMessage(dynamicSelectionMode,
-					"Selection Mode"));
-		}
-		return this.selectionMode;
-	}
-	
-	/**
-	 * @return {@link #subSelectionMode }, without dynamic interpretation via the
-	 *         {@link #interpreter}.
-	 */
-	@Nullable
-	public String getRawSubSelectionMode()
-	{
-		String dynamicSubSelectionMode = null;
-		if(this.subSelectionMode != null)
-		{
-			dynamicSubSelectionMode = interpreter.processDynamicData(this.subSelectionMode);
-			if (!isPermittedSubSelectionMode(dynamicSubSelectionMode))
-			{
-				throw new IllegalArgumentException(getIllegalValueForTagMessage(dynamicSubSelectionMode,
-						"Sub-Selection Mode"));
-			}
-		}
-		return this.subSelectionMode;
-	}
-
-	/**
 	 * @return {@link #selectionContent }, without dynamic interpretation via
 	 *         the {@link #interpreter}.
 	 */

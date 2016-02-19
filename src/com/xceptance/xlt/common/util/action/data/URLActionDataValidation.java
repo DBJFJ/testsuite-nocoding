@@ -378,39 +378,6 @@ public class URLActionDataValidation
     }
     
     /**
-     * @return the raw {@link #selectionMode }, without dynamic interpretation via the {@link #interpreter}.
-     */   
-    public String getRawSelectionMode()
-    {
-        final String dynamicSelectionMode = interpreter.processDynamicData(selectionMode);
-        if (!isPermittedSelectionMode(dynamicSelectionMode))
-        {
-            throw new IllegalArgumentException(getIllegalValueForTagMessage(dynamicSelectionMode, "Selection Mode"));
-        }
-        return selectionMode;
-    }
-    
-	/**
-	 * @return the raw {@link #subSelectionMode }, without dynamic interpretation via the
-	 *         {@link #interpreter}.
-	 */
-	@Nullable
-	public String getRawSubSelectionMode()
-	{
-		String dynamicSubSelectionMode = null;
-		if(this.subSelectionMode != null)
-		{
-			dynamicSubSelectionMode = interpreter.processDynamicData(this.subSelectionMode);
-			if (!isPermittedSubSelectionMode(dynamicSubSelectionMode))
-			{
-				throw new IllegalArgumentException(getIllegalValueForTagMessage(dynamicSubSelectionMode,
-						"Sub-Selection Mode"));
-			}
-		}
-		return subSelectionMode;
-	}
-
-    /**
      * @return the raw {@link #selectionContent}, without dynamic interpretation via the {@link #interpreter}.
      */
     @Nullable
@@ -429,18 +396,6 @@ public class URLActionDataValidation
 		return subSelectionValue;
 	}
     
-    /**
-     * @return the raw {@link #validationMode}, without dynamic interpretation via the {@link #interpreter}.
-     */
-    public String getRawValidationMode()
-    {
-        final String dynamicValidationMode = interpreter.processDynamicData(validationMode);
-        if (!isPermittedValidationMode(dynamicValidationMode))
-        {
-            throw new IllegalArgumentException(getIllegalValueForTagMessage(dynamicValidationMode, "Validation Mode"));
-        }
-        return validationMode;
-    }
     /**
      * @return the raw {@link #validationContent}, without dynamic interpretation via the {@link #interpreter}.
      */

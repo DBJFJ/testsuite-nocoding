@@ -201,10 +201,8 @@ public class URLActionDataStoreTest
     	Assert.assertEquals(value, store.getSubSelectionContent());
     	   	
     	// test the raw methods
-    	Assert.assertEquals(parNameSMode, store.getRawSelectionMode());
     	Assert.assertEquals(parName, store.getRawSelectionContent());
     	
-    	Assert.assertEquals(parNameSubSMode, store.getRawSubSelectionMode());
     	Assert.assertEquals(parName, store.getRawSubSelectionContent());
     }
 }

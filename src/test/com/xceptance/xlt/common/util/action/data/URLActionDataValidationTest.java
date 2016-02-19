@@ -174,13 +174,10 @@ public class URLActionDataValidationTest
     	Assert.assertEquals(value, validation.getValidationContent());
     	
     	// test the raw methods
-    	Assert.assertEquals(parNameSMode, validation.getRawSelectionMode());
     	Assert.assertEquals(parName, validation.getRawSelectionContent());
     	
-    	Assert.assertEquals(parNameSubSMode, validation.getRawSubSelectionMode());
     	Assert.assertEquals(parName, validation.getRawSubSelectionContent());
     	
-    	Assert.assertEquals(parNameVMode, validation.getRawValidationMode());
     	Assert.assertEquals(parName, validation.getRawValidationContent());
     }
 }

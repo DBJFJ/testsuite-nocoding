@@ -111,7 +111,7 @@ The Thread Group similarily provides it's name for the YAML file. It also divide
 
 #### User Defined Variables
 
-User Defined Variables can be read inside the Test Plan, the Thread Group or inside an action. In either case the variables are saved into the interpreter. 
+User Defined Variables can be read inside the Test Plan, the Thread Group or inside an action. In either case the variables are saved into the interpreter. Since they are always saved into the interpreter and the values interpreter is the same for every action inside a Thread Group, all User Defined Variables are defined right at the start. Overwriting doesn't work. <verify and work on that and add to problem sources>
 
 #### HTTP Request Defaults
 
