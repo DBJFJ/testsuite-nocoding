@@ -1,0 +1,52 @@
+-   Action:
+        Name: regex normal
+        Request:
+            Url: https://www.xceptance.com/en/
+            Method: GET
+        Response:
+            Httpcode: 200
+            Store:
+            -   simulate:
+                    Regex: s(i)m(ula)te
+                    Group: '2'
+            Validate:
+            -   Response Assertion:
+                    Regex: .*
+                    Exists: We (.+) the traffic
+            -   Response Assertion:
+                    Var: ${simulate}
+                    Matches: ula
+-   Action:
+        Name: regex full
+        Request:
+            Url: https://www.xceptance.com/en/
+            Method: GET
+        Response:
+            Httpcode: 200
+            Store:
+            -   simulate:
+                    Regex: s(i)m(ula)te
+            Validate:
+            -   Response Assertion:
+                    Regex: .*
+                    Exists: We (.+) the traffic
+            -   Response Assertion:
+                    Var: ${simulate}
+                    Matches: ula
+-   Action:
+        Name: regex defaults
+        Request:
+            Url: https://www.xceptance.com/en/
+            Method: GET
+        Response:
+            Httpcode: 200
+            Store:
+            -   simulate:
+                    Regex: s(i)m(ula)te
+            Validate:
+            -   Response Assertion:
+                    Regex: .*
+                    Exists: We (.+) the traffic
+            -   Response Assertion:
+                    Var: ${simulate}
+                    Matches: ula

@@ -1,5 +1,6 @@
 -   Store:
     -   headerValue1: value1
+    -   varURL: https://blazemeter.com
     -   somewhere: cepta
     -   var1: var2content
     -   parValue1: value_1
@@ -11,7 +12,7 @@
 -   Action:
         Name: something test
         Request:
-            Url: https://blazemeter.com
+            Url: ${varURL}
             Method: GET
             Parameters:
             -   ${par1}: ${parValue1}

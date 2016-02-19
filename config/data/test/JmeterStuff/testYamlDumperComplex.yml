@@ -8,10 +8,11 @@
     - selValue : content=(.+?)test
     - subSelValue : 1
     - valContent : \"BlazeMeter offers a cross-enterprise
+    - varURL : https://blazemeter.com
 - Action : 
     Name : something test
     Request : 
-        Url : https://blazemeter.com
+        Url : ${varURL}
         Method : GET
         Parameters : 
             - ${par1} : ${parValue1}         
