@@ -1,12 +1,13 @@
 package test.com.xceptance.xlt.common.util.action.data.Jmeter;
 
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -19,14 +20,19 @@ public class JmeterConverterTest {
 
 	
 	private final static String rootFolder = "./config/data/test/JmeterStuff/";
-	private static String folderTmp = rootFolder + "/tmp/";	
+	private static String folderTmp = rootFolder + "tmp/";	
 		
-	private final String filePath1 = rootFolder + "TSearchDidYouMean.jmx";
-	private final String filePath2 = rootFolder + "HTTP Request.jmx";
-	private final String filePath3 = rootFolder + "regex.jmx";
+	private final String fileTSearch = rootFolder + "TSearchDidYouMean.jmx";
+
+	private final String fileRegex = rootFolder + "regex.jmx";
 	
-	private final String fileEmptyFile = rootFolder + "emptyFile.yml";
+	private final String fileHttpR = rootFolder + "HTTP Request.jmx";
+	
+	private final String emptyFile = "./config/data/test/emptyFile.yml";
+	
 	private final String notExistingFile = "notExistingFile";
+	
+	private final String notJmxFile = rootFolder + "complexYamlDump.yml"; 
 
 
 	/**
@@ -42,32 +48,54 @@ public class JmeterConverterTest {
 		}
 	}
 	
+	/**
+	 * Tests what happens if the converter is executed without any input.
+	 * 
+	 * @throws IOException
+	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void noInput() throws IOException {
 		JmeterConverter.main();
 	}
 	
+	/**
+	 * Tests what happens if the converter is executed with a single filepath, 
+	 * and that file doesn't exist. Expected: an error was logged. How to test that?
+	 * I don't know.
+	 * 
+	 * @throws IOException
+	 */
 	@Test
 	public void testNonexistingFile() throws IOException {
 		JmeterConverter.main(notExistingFile);
-		// TODO how to test it logs?
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	/**
+	 * Tests what happens if the converter is executed with a single filepath, 
+	 * and that file is empty. Expected: an error was logged. How to test that?
+	 * I don't know. TODO
+	 * 
+	 * @throws IOException
+	 */
+	@Test
 	public void testEmptyFile() throws IOException {
 		
-		JmeterConverter.main(fileEmptyFile);
+		JmeterConverter.main(emptyFile);
 	}
 	
+	
+	/**
+	 * Tests what happens if the converter is executed with a single filepath, 
+	 * and that file is not a Jmeter file (not a .jmx ending). 
+	 * Expected: an error was logged. How to test that?
+	 * I don't know. TODO
+	 * 
+	 * @throws IOException
+	 */
 	@Test
-	public void testFileNotJmeter() {
+	public void testFileNotJmeter() throws IOException {
 		
-		// call the method with an existing file,
-		// but that file is not a Jmeter file
-		// what is supposed to happen here ... ?
-		
-		// how does it even recognize that ... - ending ? That's dump, but w/e
-		fail("Not yet implemented");
+		JmeterConverter.main(notJmxFile);
 	}
 	
 	/**
@@ -79,46 +107,105 @@ public class JmeterConverterTest {
 	@Test
 	public void testOneTGroup() throws IOException {
 		
-		final File CORRECT = new File(rootFolder + "correct-regex.yml");
+		// copy the files over to the tmpFolder
+		Path toConvert = copyFileToTmp(fileRegex, "regex.jmx");
 		
-		JmeterConverter.main(filePath3);
+		// convert it
+		JmeterConverter.main(toConvert.toString());
+		
+		// compare it
 		String yamlFileName = "regex" + "-" + "Thread Group" + ".yml"; 
-		
-		boolean dumpAsExpected = FileUtils.contentEquals(CORRECT, new File(yamlFileName));
-		Assert.assertTrue(dumpAsExpected);
+		String correct = "correct-regex.yml";
+		assertFilesEqual(correct, yamlFileName);
 	}
 	
 	@Test
 	public void testManyTGroups() throws IOException {
 		
-		final File CORRECT = new File(rootFolder + "correct-TSearch.yml");
+		// copy the files over to the tmpFolder
+		Path toConvert = copyFileToTmp(fileTSearch, "TSearch.jmx");
 		
-		JmeterConverter.main(filePath1);
-		String yamlFileName = "TSearchDidYouMean" + "-" + "Thread Group" + ".yml"; 
+		// convert it
+		JmeterConverter.main(toConvert.toString());
 		
-		boolean dumpAsExpected = FileUtils.contentEquals(CORRECT, new File(yamlFileName));
-		Assert.assertTrue(dumpAsExpected);
+		// compare first thread group ...
+		String yamlFileName = "TSearch" + "-" + "Thread Group1" + ".yml"; 
+		String correctF = "correct-TSearch1.yml";
+		assertFilesEqual(correctF, yamlFileName);
+		
+		// compare first thread group ...
+		yamlFileName = "TSearch" + "-" + "Thread Group2" + ".yml"; 
+		correctF = "correct-TSearch2.yml";
+		assertFilesEqual(correctF, yamlFileName);
+		
+		// compare first thread group ...
+		yamlFileName = "TSearch" + "-" + "Validate Response Headers" + ".yml"; 
+		correctF = "correct-TSearch3.yml";
+		assertFilesEqual(correctF, yamlFileName);
 	}
 	
 	@Test
-	public void testManyFil() {
+	public void testManyFiles() throws IOException {
 		
 		// copy over the .jmx files
-		// execute with the .jmx file, 
-		// validate everything
-		// can just use existing files
+
+		Path regexTConvert = copyFileToTmp(fileRegex, "regex.jmx");
+		Path tSearchTConvert = copyFileToTmp(fileTSearch, "TSearch.jmx");
+		Path httpRTConvert = copyFileToTmp(fileHttpR, "HttpR.jmx");
 		
-		fail("Not yet implemented");
+		// execute with the .jmx files, 
+		String[] args = {
+				regexTConvert.toString(), tSearchTConvert.toString(), httpRTConvert.toString()
+		};
+		JmeterConverter.main(args);
+		
+		// validate everything ...
+		
+		// validate regex
+		String yamlFileName = "regex" + "-" + "Thread Group" + ".yml"; 
+		String correctF = "correct-regex.yml";
+		assertFilesEqual(correctF, yamlFileName);
+		
+		// validate TSearch ( this is exactly the same as in 
+		// compare first thread group ...
+		yamlFileName = "TSearch" + "-" + "Thread Group1" + ".yml"; 
+		correctF = "correct-TSearch1.yml";
+		assertFilesEqual(correctF, yamlFileName);
+		
+		// compare first thread group ...
+		yamlFileName = "TSearch" + "-" + "Thread Group2" + ".yml"; 
+		correctF = "correct-TSearch2.yml";
+		assertFilesEqual(correctF, yamlFileName);
+		
+		// compare first thread group ...
+		yamlFileName = "TSearch" + "-" + "Validate Response Headers" + ".yml"; 
+		correctF = "correct-TSearch3.yml";
+		assertFilesEqual(correctF, yamlFileName);
+		
+		// validate HttpR 
+		yamlFileName = "HttpR" + "-" + "Thread Group" + ".yml"; 
+		correctF = "correct-HttpR.yml";
+		assertFilesEqual(correctF, yamlFileName);
 	}
 	
 	@Test
-	public void testManyFilOneWrong() {
+	public void testManyFilesOneWrong() throws IOException {
 		
-		// execute with the .jmx file, 
-		// validate everything
-		// I want a warning, not an exception
-		// control flow how?
+		Path regexTConvert = copyFileToTmp(fileRegex, "regex.jmx");
+		Path tSearchTConvert = copyFileToTmp(fileTSearch, "TSearch.jmx");
+		Path httpRTConvert = copyFileToTmp(fileHttpR, "HttpR.jmx");
 		
+		// execute with the .jmx files, 
+		String[] args = {
+				regexTConvert.toString(), notExistingFile, tSearchTConvert.toString(), 
+				emptyFile, httpRTConvert.toString()
+		};
+		JmeterConverter.main(args);
+		
+		
+		// don't validate, that was done in testManyFiles
+		
+		// how to test a warning was logged?
 	}
 
 	/**
@@ -126,8 +213,48 @@ public class JmeterConverterTest {
 	 * 
 	 * @throws Exception
 	 */
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
+	@After
+	public void deleteTmpFolder() throws Exception {
 		FileUtils.deleteDirectory(new File(folderTmp));
+	}
+	
+	/**
+	 * Copies a file over to the temp Folder, so it can be converted there and 
+	 * the converted file will also end up there.
+	 * 
+	 * @param source the file to copy
+	 * @param name the name the copy should have
+	 * @return the path of the copy
+	 * @throws IOException
+	 */
+	private Path copyFileToTmp(String source, String name) throws IOException {
+		
+		Path copy = Paths.get(folderTmp + name);
+		Files.createDirectories(copy.getParent());
+		Files.copy(Paths.get(source), copy);
+		
+		return copy;
+	}
+	
+	/**
+	 * Takes two filenames and asserts that a file with the corrName exist in the
+	 * {@link #rootFolder}, a file with the checkName exists in the {@link #folderTmp} 
+	 * and their content is equal.
+	 * 
+	 * @param corrName
+	 * @throws IOException 
+	 */
+	private void assertFilesEqual(String corrName, String checkName) throws IOException {
+		
+		final String convertedFile = folderTmp.toString() + checkName;
+		final File CORRECT = new File(rootFolder + corrName);
+		
+		// validate exists
+		Assert.assertTrue(Files.exists(Paths.get(convertedFile)));
+		Assert.assertTrue(CORRECT.exists());
+		
+		// validate content equal
+		boolean equal = FileUtils.contentEquals(CORRECT, new File(convertedFile));
+		Assert.assertTrue(equal);
 	}
 }

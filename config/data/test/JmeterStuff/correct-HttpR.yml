@@ -1,0 +1,43 @@
+-   Store:
+    -   var1: content1
+    -   var2: content2
+-   Action:
+        Name: HTTP-Request-1
+        Request:
+            Url: http://www.xceptance.net
+            Method: GET
+        Response:
+            Httpcode: 302
+-   Action:
+        Name: Impossible Validations
+        Request:
+            Url: https://www.xceptance.net
+            Method: GET
+        Response:
+            Httpcode: 302
+            Validate:
+            -   OnePossible:
+                    Regex: .*
+                    Text: '302'
+-   Action:
+        Name: HTTP-Request-2
+        Request:
+            Url: https://www.xceptance.net
+            Method: GET
+        Response:
+            Httpcode: 200
+-   Action:
+        Name: test
+        Request:
+            Url: http://blazemeter.com
+            Method: GET
+        Response:
+            Httpcode: 200
+            Store:
+            -   urls:
+                    Regex: content=(.+?)test
+                    Group: '1'
+            Validate:
+            -   Response Assertion:
+                    Var: ${urls}
+                    Matches: '"BlazeMeter offers a cross-enterprise'

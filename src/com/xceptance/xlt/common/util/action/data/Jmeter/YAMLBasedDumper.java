@@ -1,10 +1,11 @@
 package com.xceptance.xlt.common.util.action.data.Jmeter;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,9 +65,11 @@ public class YAMLBasedDumper {
 		XltLogger.runTimeLogger.info("Writing Test Case to YAML file ...");
 				
 		Files.createDirectories(dumpThere.getParent());
-		Files.createFile(dumpThere);
-
-		PrintWriter printwriter = new PrintWriter(dumpThere.toFile());
+		
+		if (!Files.exists(dumpThere)) {
+			Files.createFile(dumpThere);
+		}
+		PrintWriter printwriter = new PrintWriter(new FileOutputStream(dumpThere.toString(), false));
 	
 	    DumperOptions dumperoptions = new DumperOptions();
 	    dumperoptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);

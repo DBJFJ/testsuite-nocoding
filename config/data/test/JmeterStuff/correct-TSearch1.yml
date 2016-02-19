@@ -1,0 +1,147 @@
+-   Store:
+    -   host: production-stage02-dw.demandware.net/s/SiteGenesis
+    -   searchPhrase3: dress%20flora
+    -   searchPhrase2: blut
+    -   searchPhrase1: iuzauz
+    -   justADummyVariable: justSomeDummyText
+    -   suggestionPhrase3: dress%20floral
+    -   suggestionPhrase2: blue
+-   Action:
+        Name: Open Homepage
+        Request:
+            Url: http://${host}/home
+            Method: GET
+            Headers:
+            -   User-Agent: Mozilla/4.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0
+            -   Referer: yahoo.com
+        Response:
+            Httpcode: 200
+            Validate:
+            -   Validate Dummy Variable Equals:
+                    Var: ${justADummyVariable}
+                    Text: justSomeDummyText
+            -   Validate Dummy Variable Matches:
+                    Var: ${justADummyVariable}
+                    Matches: justSomeD..myT.*
+            -   Validate Search Bar Exists:
+                    Regex: .*
+                    Exists: id="q"
+            -   Validate if demandware logo exists:
+                    Regex: .*
+                    Exists: <h1\ class="primary-logo">
+-   Action:
+        Name: search for nonsense
+        Request:
+            Url: http://${host}/search
+            Method: GET
+            Parameters:
+            -   q: ${searchPhrase1}
+            -   test: somthingsomething
+            Headers:
+            -   Referer: https://www.google.de
+        Response:
+            Httpcode: 200
+            Store:
+            -   noHitsBanner:
+                    XPath: //*[@class="section-header"]/p
+            Validate:
+            -   validate if no articles found exists:
+                    Regex: .*
+                    Exists: class="no-hits-banner">
+            -   validate if banner features correct text:
+                    Var: ${noHitsBanner}
+                    Matches: We're sorry, no products were found for your search
+-   Action:
+        Name: test for typing mistake in search 1
+        Request:
+            Url: http://${host}/search
+            Method: GET
+            Parameters:
+            -   q: ${searchPhrase2}
+            Headers:
+            -   Referer: yahoo.com
+        Response:
+            Httpcode: 200
+            Store:
+            -   noHitsBanner:
+                    XPath: //*[@class="section-header"]/p
+            -   suggestedSearchTerm:
+                    XPath: //*[@class="no-hits-search-term-suggest"]
+            Validate:
+            -   validate if no articles found exists:
+                    Regex: .*
+                    Exists: class="no-hits-banner">
+            -   validate if banner features correct text:
+                    Var: ${noHitsBanner}
+                    Matches: We're sorry, no products were found for your search
+            -   validate if the expected search term was suggested:
+                    Var: ${suggestedSearchTerm}
+                    Matches: ${suggestionPhrase2}
+-   Action:
+        Name: test for correcting the mistake afterwards 1
+        Request:
+            Url: http://${host}/search
+            Method: GET
+            Parameters:
+            -   q: ${suggestionPhrase2}
+            Headers:
+            -   Referer: yahoo.com
+        Response:
+            Httpcode: 200
+            Validate:
+            -   validate articles were found:
+                    Regex: .*
+                    Exists: <span class="breadcrumb-element breadcrumb-result-text">
+            -   validate the first banner exists:
+                    Regex: .*
+                    Exists: <div class="content-slot slot-grid-header">
+            -   validate if the 'so and so many results found exists':
+                    Regex: .*
+                    Exists: <div class="results-hits"
+-   Action:
+        Name: test for typing mistake in search 2
+        Request:
+            Url: http://${host}/search
+            Method: GET
+            Parameters:
+            -   q: ${searchPhrase3}
+            Headers:
+            -   Referer: yahoo.com
+        Response:
+            Httpcode: 200
+            Store:
+            -   noHitsBanner:
+                    XPath: //*[@class="section-header"]
+            -   suggestedSearchTerm:
+                    XPath: //*[@class="no-hits-search-term-suggest"]
+            Validate:
+            -   validate if no articles found exists:
+                    Regex: .*
+                    Exists: class="no-hits-banner">
+            -   validate if banner features correct text:
+                    Var: ${noHitsBanner}
+                    Matches: We're sorry, no products were found for your search
+            -   validate if the expected search term was suggested:
+                    Var: ${suggestedSearchTerm}
+                    Matches: ${searchPhrase3}
+-   Action:
+        Name: test for correcting the mistake afterwards 2
+        Request:
+            Url: http://${host}/search
+            Method: GET
+            Parameters:
+            -   q: ${suggestionPhrase3}
+            Headers:
+            -   Referer: yahoo.com
+        Response:
+            Httpcode: 200
+            Validate:
+            -   validate articles were found:
+                    Regex: .*
+                    Exists: <span class="breadcrumb-element breadcrumb-result-text">
+            -   Validate the first banner exists:
+                    Regex: .*
+                    Exists: <div class="content-slot slot-grid-header">
+            -   Validate if the 'so and so many results found exists':
+                    Regex: .*
+                    Exists: <div class="results-hits"

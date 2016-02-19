@@ -1,0 +1,21 @@
+-   Action:
+        Name: HTTP Request
+        Request:
+            Url: https://www.google.de
+            Method: GET
+        Response:
+            Httpcode: 200
+            Validate:
+            -   1validate name exists:
+                    Header: Expires
+            -   2validate value exists (doesn't work/map into TSNC):
+                    Header: '-1'
+            -   3validate name:value:
+                    Header: Expires
+                    Matches: '-1'
+            -   4validate multiple name:value:
+                    Header: Expires
+                    Matches: '-1'
+            -   4validate multiple name:value:
+                    Header: Vary
+                    Matches: Accept-Encoding

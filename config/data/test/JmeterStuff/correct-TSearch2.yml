@@ -1,0 +1,19 @@
+-   Action:
+        Name: action with defaults
+        Request:
+            Url: https://www.google.de/search
+            Method: GET
+            Parameters:
+            -   x-param: parameter1
+        Response:
+            Httpcode: 200
+-   Action:
+        Name: action without defaults
+        Request:
+            Url: http://www.xceptance.com/en
+            Method: GET
+            Parameters:
+            -   x-param: parameter1
+            -   y-param: parameter2
+        Response:
+            Httpcode: 200

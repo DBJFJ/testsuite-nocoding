@@ -466,14 +466,14 @@ public class JmeterTranslater {
 				case TNAME_HEADERS: {
 
 					// read default headers
-					List<NameValuePair> d_headers = readHeaders(reader);
-					actionBuilder.setDefaultHeaders(d_headers);
+					List<NameValuePair> defaultHeaders = readHeaders(reader);
+					actionBuilder.setDefaultHeaders(defaultHeaders);
 					break;
 				}
 				case TNAME_VARS: {
 
 					// read the variables and stores them
-					readVariables(actionBuilder, reader);
+					readVariables(reader);
 					break;
 				}
 				case TNAME_ACTION: {
@@ -481,8 +481,7 @@ public class JmeterTranslater {
 					// an TNAME_ACTION is aquivalent to an HttpRequest
 					// is aquivalent to an action. get and set the testname
 					String actionName = getAttributeValue(ATTRN_ACTION_NAME, se);
-					URLActionData action = readAction(reader, actionBuilder,
-							actionName);
+					URLActionData action = readAction(reader, actionName);
 					testCaseActions.add(action);
 					break;
 				}
@@ -501,16 +500,12 @@ public class JmeterTranslater {
 	 * Is called inside of {@link #readThreadGroup} if the tag name of a
 	 * StartElement equals {@link #TNAME_VARS}. Reads multiple variables with
 	 * their names and values and stores them in the ParameterInterpreter.
-	 * 
-	 * @param actionBuilder
-	 *            the actionBuilder in which interpreters the variables will be
-	 *            stored
 	 * @param reader
 	 *            the XMLEventReader with it's position
+	 * 
 	 * @throws XMLStreamException
 	 */
-	private void readVariables(URLActionDataBuilder actionBuilder,
-			XMLEventReader reader) throws XMLStreamException {
+	private void readVariables(XMLEventReader reader) throws XMLStreamException {
 
 		XltLogger.runTimeLogger.debug("Storing Variables ...");
 
@@ -668,7 +663,7 @@ public class JmeterTranslater {
 					break;
 					
 				case ATTRV_ACTION_PARAM:
-					defaultParameters = readParameters(actionBuilder, reader);
+					defaultParameters = readParameters(reader);
 					break;
 
 				default:
@@ -775,15 +770,13 @@ public class JmeterTranslater {
 	 * 
 	 * @param reader
 	 *            the XMLEventReader with it's position
-	 * @param actionBuilder
-	 *            the actionBuilder with possible default values
 	 * @param testName
 	 *            and the name of the action to read
 	 * @return an {@link URLActionData} object
 	 * @throws XMLStreamException
 	 */
 	private URLActionData readAction(XMLEventReader reader,
-			URLActionDataBuilder actionBuilder, String testName)
+			String testName)
 			throws XMLStreamException {
 
 		XltLogger.runTimeLogger
@@ -856,7 +849,7 @@ public class JmeterTranslater {
 				}
 				case ATTRV_ACTION_PARAM: {
 					// read the parameters
-					List<NameValuePair> parameters = readParameters(actionBuilder, reader);
+					List<NameValuePair> parameters = readParameters(reader);
 					// set the parameters
 					if (parameters != null) {
 						actionBuilder.setParameters(parameters);
@@ -887,7 +880,7 @@ public class JmeterTranslater {
 		String url = protocol + "://" + website + path;
 		actionBuilder.setUrl(url);
 
-		readActionContent(reader, interpreter, actionBuilder);
+		readActionContent(reader, interpreter);
 
 		// build the action and reset the URLActionDataBuilder
 		URLActionData action = actionBuilder.build();
@@ -896,16 +889,13 @@ public class JmeterTranslater {
 
 	/**
 	 * Is called inside {@link #readAction} to read the parameters.
-	 * 
-	 * @param actionBuilder
-	 *            the actionBuilder in which the parameters will be saved
 	 * @param reader
 	 *            the XMLEventReader with it's position
+	 * 
 	 * @return parameters
 	 * @throws XMLStreamException
 	 */
-	private List<NameValuePair> readParameters(URLActionDataBuilder actionBuilder,
-			XMLEventReader reader) throws XMLStreamException {
+	private List<NameValuePair> readParameters(XMLEventReader reader) throws XMLStreamException {
 
 		List<NameValuePair> parameters = new ArrayList<>();
 		parameters.addAll(defaultParameters);
@@ -937,8 +927,7 @@ public class JmeterTranslater {
 					if (elementType.equals(ATTRV_ELE_ISPARAM)) {
 
 						// read the single detected parameter
-						parameters = readParameter(actionBuilder, reader,
-								parameters);
+						parameters = readParameter(reader, parameters);
 					}
 				}
 			}
@@ -953,19 +942,16 @@ public class JmeterTranslater {
 	 * Parses a single Parameter with encoding, name and value. Sets the former
 	 * and adds the NameValuePair with name and value to the correct list.
 	 * </p>
-	 * 
-	 * @param actionBuilder
-	 *            the actionBuilder where the encoding option will be saved.
 	 * @param reader
 	 *            the XMLEventReader with it's position
 	 * @param parameters
 	 *            and the List of parameters which were already saved previously
+	 * 
 	 * @return
 	 * @throws XMLStreamException
 	 */
 	private List<NameValuePair> readParameter(
-			URLActionDataBuilder actionBuilder, XMLEventReader reader,
-			List<NameValuePair> parameters) throws XMLStreamException {
+			XMLEventReader reader, List<NameValuePair> parameters) throws XMLStreamException {
 
 		String encoded = null;
 		String parameterName = null;
@@ -1038,13 +1024,10 @@ public class JmeterTranslater {
 	 * @param interpreter
 	 *            the ParameterInterpreter for dynamic interpretation of
 	 *            variables
-	 * @param actionBuilder
-	 *            and the actionBuilder to which the resulting validations and
-	 *            extractions will be added
 	 * @throws XMLStreamException
 	 */
 	private void readActionContent(XMLEventReader reader,
-			ParameterInterpreter interpreter, URLActionDataBuilder actionBuilder)
+			ParameterInterpreter interpreter)
 			throws XMLStreamException {
 
 		XltLogger.runTimeLogger.debug("Reading new actions content: "
@@ -1097,14 +1080,14 @@ public class JmeterTranslater {
 				case TNAME_VARS: {
 
 					// read the variables and stores them
-					readVariables(actionBuilder, reader);
+					readVariables(reader);
 					break;
 				}
 				case TNAME_ASSERT_RESP: {
 
 					// check Response Assertion, add it to the actionBuilder
 					String name = getAttributeValue(ATTRN_ASSERT_NAME, se);
-					readResponseAssertion(name, reader, actionBuilder);
+					readResponseAssertion(name, reader);
 					break;
 				}
 				case TNAME_XPATH_EXTRACT: {
@@ -1135,7 +1118,9 @@ public class JmeterTranslater {
 
 					// read and set the headers for the action
 					List<NameValuePair> headers = readHeaders(reader);
-					actionBuilder.setHeaders(headers);
+					for (NameValuePair header : headers) {
+						actionBuilder.addHeader(header);
+					}
 				}
 				default:
 					break;
@@ -1163,12 +1148,9 @@ public class JmeterTranslater {
 	 *            the name of the validation(s)
 	 * @param reader
 	 *            the XMLEventReader with it's position
-	 * @param actionBuilder
-	 *            the actionBuilder to which the validations should be added
 	 * @throws XMLStreamException
 	 */
-	private void readResponseAssertion(String name, XMLEventReader reader,
-			URLActionDataBuilder actionBuilder) throws XMLStreamException {
+	private void readResponseAssertion(String name, XMLEventReader reader) throws XMLStreamException {
 
 		XltLogger.runTimeLogger.debug("Reading validation: " + name + "...");
 
@@ -1274,7 +1256,7 @@ public class JmeterTranslater {
 			}
 			
 			createValidations(name, selectionMode, selectionContent,
-					validationMode, allValidationContent, actionBuilder);
+					validationMode, allValidationContent);
 		} 
 		catch (MappingException e) {
 			
@@ -1498,12 +1480,10 @@ public class JmeterTranslater {
 	 * @param selectionContent
 	 * @param validationMode
 	 * @param allValidationContent
-	 * @param actionBuilder
 	 */
 	private void createValidations(String name, String selectionMode,
 			String selectionContent, String validationMode,
-			List<String> allValidationContent,
-			URLActionDataBuilder actionBuilder) {
+			List<String> allValidationContent) {
 	
 		// In the exceptional cases ...
 		

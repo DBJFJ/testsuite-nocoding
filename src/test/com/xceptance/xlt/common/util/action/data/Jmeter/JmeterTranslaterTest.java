@@ -197,34 +197,43 @@ public class JmeterTranslaterTest {
 												translater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
-		String[][] headerExpected = {
+		// check the default header
+		String[] defaultHeader = {"Referer", "yahoo.com"};
+		for (int i = 2; i < 6; i++) {
+			URLActionData action = actions.get(i);
+			NameValuePair header = action.getHeaders().get(0);
+			
+			Assert.assertEquals(defaultHeader[0], header.getName());
+			Assert.assertEquals(defaultHeader[1], header.getValue());
+		}
+		
+		// check if the default header can be overwritten
+		NameValuePair headerExpected = new NameValuePair("Referer", "https://www.google.de");
+		
+		URLActionData action = actions.get(1);
+		NameValuePair header = action.getHeaders().get(0);
+		Assert.assertEquals(header.getName(), headerExpected.getName());
+		Assert.assertEquals(header.getValue(), headerExpected.getValue());
+		
+		
+		// check if default and normal headers are merged
+		
+		String[][] headersExpected = {
 				{"User-Agent", "Mozilla/4.0 (X11; Ubuntu; Linux x86_64; rv:43.0) " +
 						"Gecko/20100101 Firefox/43.0" },
-				{ "Referer", "https://www.google.de"}
-				
+				{ "Referer", "yahoo.com"},
 		};
 		
-		// check the first header
-		URLActionData action = actions.get(0);
-		NameValuePair header = action.getHeaders().get(0);
-		Assert.assertEquals(header.getName(), headerExpected[0][0]);
-		Assert.assertEquals(header.getValue(), headerExpected[0][1]);
+		action = actions.get(0);
+		header = action.getHeaders().get(0);
+		Assert.assertEquals(header.getName(), headersExpected[0][0]);
+		Assert.assertEquals(header.getValue(), headersExpected[0][1]);
 		
 		// check the second header
 		action = actions.get(0);
 		header = action.getHeaders().get(1);
-		Assert.assertEquals(header.getName(), headerExpected[1][0]);
-		Assert.assertEquals(header.getValue(), headerExpected[1][1]);
-		
-		// check the default header
-		String[] defaultHeader = {"Referer", "yahoo.com"};
-		for (int i = 1; i < actions.size(); i++) {
-			action = actions.get(1);
-			header = action.getHeaders().get(0);
-			
-			Assert.assertEquals(header.getName(), defaultHeader[0]);
-			Assert.assertEquals(header.getValue(), defaultHeader[1]);
-		}
+		Assert.assertEquals(header.getName(), headersExpected[1][0]);
+		Assert.assertEquals(header.getValue(), headersExpected[1][1]);
 	}
 	
 	/**
