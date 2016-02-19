@@ -3,7 +3,9 @@ package com.xceptance.xlt.common.util.action.data;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -424,18 +426,29 @@ public class URLActionDataBuilder
         return result;
     }
 
+    /**
+     * Adds the normal headers and the default headers together.
+     * Normal headers overwrite default headers.
+     * @return
+     */
     @Nullable
     public List<NameValuePair> getHeaders()
     {
-        List<NameValuePair> result = Collections.emptyList();
-        if (!this.headers.isEmpty())
-        {
-            result = this.headers;
+        List<NameValuePair> result = new ArrayList<>();
+        Set<String> allNames = new HashSet<>();
+        
+        for (NameValuePair header : headers) {
+        	result.add(header);
+        	allNames.add(header.getName());
         }
-        else if (!this.d_headers.isEmpty())
-        {
-            result = d_headers;
+        
+        for (NameValuePair defHeader : d_headers) {
+        	
+        	if (!allNames.contains(defHeader.getName())) {
+        		result.add(defHeader);
+        	}
         }
+        
         return result;
     }
 
