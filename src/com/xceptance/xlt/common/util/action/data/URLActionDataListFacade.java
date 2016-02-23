@@ -6,6 +6,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.xceptance.xlt.api.util.XltLogger;
 import com.xceptance.xlt.common.util.ParameterUtils;
+import com.xceptance.xlt.common.util.action.data.Jmeter.JMXBasedURLActionDataListBuilder;
 import com.xceptance.xlt.common.util.bsh.ParameterInterpreter;
 
 /**<p>

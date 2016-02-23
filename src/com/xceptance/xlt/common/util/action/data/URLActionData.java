@@ -641,6 +641,14 @@ public class URLActionData
                                                + e.getMessage(), e);
         }
     }
+    
+    /**
+     * @return {@link #url}, without dynamic interpretation via {@link #interpreter}.
+     */
+    public String getRawUrl()
+    {
+        return url;
+    }
 
     /**
      * @return {@link #url}, after its dynamic interpretation via {@link #interpreter}.
