@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 :: setup basic paths
 set CWD=%CD%
 set TSNC_HOME=%CD%
-set XLT_HOME=%CD%
+set XLT_HOME=%CD%\..
 
 if not defined XLT_CONFIG_DIR set XLT_CONFIG_DIR=%XLT_HOME%\config
 
@@ -19,4 +19,4 @@ rem set JAVA_OPTIONS=%JAVA_OPTIONS% -agentlib:jdwp=transport=dt_socket,address=l
 set JAVA_OPTIONS=%JAVA_OPTIONS% -cp "%CLASSPATH%"
 
 :: run Java
-java %JAVA_OPTIONS% com.xceptance.xlt.agentcontroller.Main %*
+java %JAVA_OPTIONS% com.xceptance.xlt.common.util.action.data.Jmeter.JmeterConverter %*
