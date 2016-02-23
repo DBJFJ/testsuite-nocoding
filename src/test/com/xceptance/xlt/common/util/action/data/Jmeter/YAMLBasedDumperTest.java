@@ -114,6 +114,7 @@ public class YAMLBasedDumperTest {
 																						validationBuilder, 
 																						storeBuilder);
 		List<URLActionData> actions = builder1.buildURLActionDataList();
+
 		YAMLBasedDumper.dumpActionsYaml(actions, fileTmp);
 		boolean dumpAsExpected = FileUtils.contentEquals(fileTmp.toFile(), new File(dump));
 		Assert.assertTrue(dumpAsExpected);

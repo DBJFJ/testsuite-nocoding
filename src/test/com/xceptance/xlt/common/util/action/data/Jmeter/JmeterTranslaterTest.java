@@ -108,7 +108,7 @@ public class JmeterTranslaterTest {
 		// what matters are the resolved values
 		String allParametersInActions = "";
 		String allParametersInActionsExpected = "01qiuzauztestsomthingsomething2qblut3"
-												+"qblue4qdress%20flora5qdress%20floral";
+												+"qblue4qdress flora5qdress floral";
 		
 		for (int i = 0; i <= 5; i++) {
 			List<NameValuePair> parameters = actions.get(i).getParameters();
@@ -290,8 +290,8 @@ public class JmeterTranslaterTest {
 				{"searchPhrase1", "iuzauz"},				
 				{"searchPhrase2", "blut"},			
 				{"suggestionPhrase2", "blue"},
-				{"searchPhrase3", "dress%20flora"},
-				{"suggestionPhrase3", "dress%20floral"},
+				{"searchPhrase3", "dress flora"},
+				{"suggestionPhrase3", "dress floral"},
 				{"justADummyVariable", "justSomeDummyText"}
 			};
 	
@@ -408,7 +408,7 @@ public class JmeterTranslaterTest {
 						"<div class=\"content-slot slot-grid-header\">", 
 							"<div class=\"results-hits\""},		
 				{"class=\"no-hits-banner\">", "We're sorry, no products were " +
-						"found for your search", "dress%20flora"},			
+						"found for your search", "dress flora"},			
 				{"<span class=\"breadcrumb-element breadcrumb-result-text\">",
 							"<div class=\"content-slot slot-grid-header\">", 
 								"<div class=\"results-hits\""}			

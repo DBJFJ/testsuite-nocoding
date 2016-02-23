@@ -1,7 +1,11 @@
+-   Store:
+    -   defaultRootWebsite: www.google.de
+    -   defaultProtocol: https
+    -   defaultPath: /search
 -   Action:
         Name: action with defaults
         Request:
-            Url: https://www.google.de/search
+            Url: ${defaultProtocol}://${defaultRootWebsite}${defaultPath}
             Method: GET
             Parameters:
             -   x-param: parameter1

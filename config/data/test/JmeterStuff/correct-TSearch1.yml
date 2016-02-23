@@ -1,15 +1,16 @@
 -   Store:
     -   host: production-stage02-dw.demandware.net/s/SiteGenesis
-    -   searchPhrase3: dress%20flora
+    -   justADummyVariable: justSomeDummyText
+    -   suggestionPhrase3: dress floral
+    -   suggestionPhrase2: blue
+    -   searchPhrase3: dress flora
     -   searchPhrase2: blut
     -   searchPhrase1: iuzauz
-    -   justADummyVariable: justSomeDummyText
-    -   suggestionPhrase3: dress%20floral
-    -   suggestionPhrase2: blue
+    -   defaultProtocol: http
 -   Action:
         Name: Open Homepage
         Request:
-            Url: http://${host}/home
+            Url: ${defaultProtocol}://${host}/home
             Method: GET
             Headers:
             -   User-Agent: Mozilla/4.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0
@@ -32,7 +33,7 @@
 -   Action:
         Name: search for nonsense
         Request:
-            Url: http://${host}/search
+            Url: ${defaultProtocol}://${host}/search
             Method: GET
             Parameters:
             -   q: ${searchPhrase1}
@@ -54,7 +55,7 @@
 -   Action:
         Name: test for typing mistake in search 1
         Request:
-            Url: http://${host}/search
+            Url: ${defaultProtocol}://${host}/search
             Method: GET
             Parameters:
             -   q: ${searchPhrase2}
@@ -80,7 +81,7 @@
 -   Action:
         Name: test for correcting the mistake afterwards 1
         Request:
-            Url: http://${host}/search
+            Url: ${defaultProtocol}://${host}/search
             Method: GET
             Parameters:
             -   q: ${suggestionPhrase2}
@@ -101,7 +102,7 @@
 -   Action:
         Name: test for typing mistake in search 2
         Request:
-            Url: http://${host}/search
+            Url: ${defaultProtocol}://${host}/search
             Method: GET
             Parameters:
             -   q: ${searchPhrase3}
@@ -127,7 +128,7 @@
 -   Action:
         Name: test for correcting the mistake afterwards 2
         Request:
-            Url: http://${host}/search
+            Url: ${defaultProtocol}://${host}/search
             Method: GET
             Parameters:
             -   q: ${suggestionPhrase3}

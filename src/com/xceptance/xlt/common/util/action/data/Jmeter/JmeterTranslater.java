@@ -260,15 +260,25 @@ public class JmeterTranslater {
 	 * the response header), the selectionMode is temporarily set to this
 	 */
 	private final String VALIDATE_RESP_CODE = "respCode";
+	
+	/*
+	 * the default settings for http protocol, website and path do not 
+	 * exist in TSNC, which is why we use variables instead. The variable names
+	 * are defined here.
+	 */
+	
+	private final String DEF_PROTOCOL = "defaultProtocol";
+	
+	private final String DEF_WEBSITE = "defaultRootWebsite";
+	
+	private final String DEF_PATH = "defaultPath";
 
-	private String defaultWebsite = null;
-	
-	private String defaultPath = null;
-	
-	private String defaultProtocol = null;
-	
 	private List<NameValuePair> defaultParameters = new ArrayList<NameValuePair>();
 
+	/*
+	 *  the rest ...
+	 */
+	
 	private ParameterInterpreter interpreter;
 
 	private URLActionDataBuilder actionBuilder;
@@ -323,7 +333,7 @@ public class JmeterTranslater {
 						XltLogger.runTimeLogger.info("Reading " + nameTGroup + "...");
 						
 						// we don't want to take stuff from the last threadgroup with us ...
-						resetDefaults();
+						defaultParameters = new ArrayList<NameValuePair>();
 						XltProperties properties = XltProperties.getInstance();
 						GeneralDataProvider dataProvider = GeneralDataProvider.getInstance();
 						this.interpreter = new ParameterInterpreter(properties, dataProvider); 	
@@ -608,7 +618,11 @@ public class JmeterTranslater {
 				}
 			}
 		}
-		// save the aquired arguments
+		
+		// replace %20 with a whitespace, because that seems to match Jmeters and TSNCs behavior
+		argsValue = argsValue.replace("%20", " ");
+		
+		// save the acquired arguments
 		NameValuePair nvp = new NameValuePair(argsName, argsValue);
 		return nvp;
 	}
@@ -640,34 +654,43 @@ public class JmeterTranslater {
 				// and get the attribute for 'name'
 				String name = getAttributeValue(ATTRN_NAME, se);
 
-				switch (name) {
-				case ATTRV_ACTION_WEBSITE:
-					event = reader.nextEvent();
-					if (event.isCharacters()) {
-						defaultWebsite = getTagContent(event);
-					}
-					break;
+				try {
+					switch (name) {
+					case ATTRV_ACTION_WEBSITE:
+						event = reader.nextEvent();
+						if (event.isCharacters()) {
+							NameValuePair nvp = new NameValuePair(DEF_WEBSITE, getTagContent(event));
+							interpreter.set(nvp);
+						}
+						break;
 					
-				case ATTRV_ACTION_PATH:
-					event = reader.nextEvent();
-					if (event.isCharacters()) {
-						defaultPath = getTagContent(event);
-					}
-					break;
+					case ATTRV_ACTION_PATH:
+						event = reader.nextEvent();
+						if (event.isCharacters()) {
+							NameValuePair nvp = new NameValuePair(DEF_PATH, getTagContent(event));
+							interpreter.set(nvp);
+						}
+						break;
 				
-				case ATTRV_ACTION_PROTOC:
-					event = reader.nextEvent();
-					if (event.isCharacters()) {
-						defaultProtocol = getTagContent(event);
-					}
-					break;
+					case ATTRV_ACTION_PROTOC:
+						event = reader.nextEvent();
+						if (event.isCharacters()) {
+							NameValuePair nvp = new NameValuePair(DEF_PROTOCOL, getTagContent(event));
+							interpreter.set(nvp);
+						}
+						break;
 					
-				case ATTRV_ACTION_PARAM:
-					defaultParameters = readParameters(reader);
-					break;
+					case ATTRV_ACTION_PARAM:
+						defaultParameters = readParameters(reader);
+						break;
 
-				default:
-					break;
+					default:
+						break;
+					}
+					}
+				catch (EvalError e) {
+					XltLogger.runTimeLogger.error("Coudn't set variable default protocol," +
+							" website or path for some reason"); 
 				}
 			}
 		}
@@ -782,10 +805,17 @@ public class JmeterTranslater {
 		XltLogger.runTimeLogger
 				.debug("Reading new Action: " + testName + "...");
 
-		// set the defaults ...
-		String protocol = defaultProtocol;
-		String website = defaultWebsite;
-		String path = defaultPath;
+		// set the defaults if they exist ...
+		String protocol = null, website = null, path = null;
+		if (isVarInInterpreter(DEF_PROTOCOL)) {
+			protocol = "${" + DEF_PROTOCOL + "}";
+		}
+		if (isVarInInterpreter(DEF_WEBSITE)) {
+			website = "${" + DEF_WEBSITE + "}";
+		}
+		if (isVarInInterpreter(DEF_PATH)) {
+			path = "${" + DEF_PATH + "}";
+		}
 
 		// set the testname and the interpreter
 		actionBuilder.setName(testName);
@@ -1888,6 +1918,24 @@ public class JmeterTranslater {
 			return warning;
 		}
 	}
+	
+	/**
+	 * Tests if a certain variable is inside the interpreter. Takes a name, checks if a variable 
+	 * with that name is registered with it and returns true of it is, false otherwise.
+	 * 
+	 * @param var
+	 * @return
+	 */
+	private boolean isVarInInterpreter(String name) {
+		
+		for (String var : interpreter.getNameSpace().getVariableNames()) {
+			if (name.equals(var)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
 
 	/**
 	 * Declares the custom mapping exception for better error handling.
@@ -1927,18 +1975,5 @@ public class JmeterTranslater {
 		
 		XltLogger.runTimeLogger.error(message);
 		throw new MappingException(message);
-	}
-	
-	/**
-	 * Resets the default values {@link JmeterTranslater#defaultWebsite}, 
-	 * {@link #defaultPath}, {@link #defaultProtocol} and {@link #defaultParameters}.
-	 * Sets them to null (or an empty Arraylist for the defaultParameters).
-	 */
-	private void resetDefaults() {
-		
-		defaultWebsite = null;
-		defaultPath = null;
-		defaultProtocol = null;
-		defaultParameters = new ArrayList<NameValuePair>();
 	}
 }

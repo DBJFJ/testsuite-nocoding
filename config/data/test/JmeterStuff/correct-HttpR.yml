@@ -1,4 +1,5 @@
 -   Store:
+    -   defaultProtocol: https
     -   var1: content1
     -   var2: content2
 -   Action:
@@ -11,7 +12,7 @@
 -   Action:
         Name: Impossible Validations
         Request:
-            Url: https://www.xceptance.net
+            Url: ${defaultProtocol}://www.xceptance.net
             Method: GET
         Response:
             Httpcode: 302
