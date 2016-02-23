@@ -60,9 +60,6 @@ public class JmeterConverter {
 				dumpFolder = Paths.get("./");
 			}		
 			
-			// DEBUG
-			System.out.println("dumpFolder: " + dumpFolder);
-			
 			String testplanName = FilenameUtils.getBaseName(filePath);
 				
 			LinkedHashMap<String, List<URLActionData>> ThreadGroups = 
@@ -82,9 +79,6 @@ public class JmeterConverter {
 				Path dumpThere = Paths.get(dumpFolder + "/" + fileName + ".yml");
 				while (Files.exists(dumpThere)) {
 					XltLogger.runTimeLogger.info(dumpThere.toString() + " already exists");
-					
-					// DEBUG
-					System.out.println("dumpFolder: " + dumpFolder + ", fileName: " + fileName);
 					
 					fileName = fileName + "#";
 					dumpThere = Paths.get(dumpFolder + "/" + fileName + ".yml");
