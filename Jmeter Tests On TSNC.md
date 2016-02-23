@@ -1,38 +1,46 @@
 # Using Tests From Jmeter With TSNC
 
-<add introduction>
+You want to try out a new test tool, but you don't want to rewrite all your tests? You want to take a look at a new workflow and result browser without setting everything up by hand? You want to migrate or use Jmeter and TSNC in parallel? TSNC provides a way to execute simple test cases created in Jmeter. TSNC also provides a way to convert a lot of Jmeter tests into it's native YAML format at once. 
 
-Not all tests can be translated, unfortunately TSNC and Jmeter work in different ways and Jmeter posesses far more features. FTP-Requests or Loops just do not exists in TSNC and it uses it's own result browser in place of Jmeters Listeners and it's own load test configurations. Only tests with the following structure can be translated:  
+Unfortunately, Not all tests can be translated.  TSNC and Jmeter work in different ways and Jmeter posesses far more features. FTP-Requests or Loops just do not exists in TSNC and it uses it's own result browser in place of Jmeters Listeners and it's own load test configurations. Only tests with the following structure can be translated:  
 
 * Thread Group
     * (Variable Declarations)
+    * HTTP Request Defaults
+    * HTTP Header Manager
     * HTTP Request Sampler
+        * HTTP Header Manager
         * XPath/ RegEx Extractions
         * Response Assertions
         * (Variable Declarations)
     * HTTP Request Sampler
+        * HTTP Header Manager
         * XPath/RegEx Extractions
         * Response Assertions
         * (Variable Declarations) 
 * Thread Group ...
 
+The test should run out of the box in most cases. Should the translation crash, your tests crash or should they refuse to work as they should, see the documentation below for possible reasons. Feel free to open an issue if a problem persists. Execution and conversion use the same translator, so the same limits apply. 
+
 ## Executing Jmeter Tests
 
-You want to try out a new test tool, but you don't want to rewrite all your tests? You want to take a look at a new workflow and result browser without setting everything up by hand? TSNC provides a way to execute simple test cases created in Jmeter. It also translates them into it's native YAML format, so you can get used to TSNC syntax more easily. <add more and stuff>
+Only the first Thread Group will be executed when executing Jmeter test plans on TSNC. 
 
-Go to the the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) page and follow the instructions. When you come to the Define the Test Case section, just copy over your test cases .jmx file  instead of creating a new one. Follow the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) guide further to create your wrapper class. Execute it.  
-
-The test should run out of the box in most cases. Should the translation crash, your tests crash or should they refuse to work as they should, see the documentation below for possible reasons. Feel free to open an issue if a problem persists. 
+Just go to the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) page and follow the instructions. When you come to the Define the Test Case section, just copy over your test cases .jmx file  instead of creating a new one. Follow the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) guide further to create your wrapper class. Execute it.  
 
 ## Converting Jmeter Tests to TSNCs YAML
 
-You have a batch of test cases and don't want to rewrite them by hand? TSNC offers a handy converter for the Jmeter -> TSNC translation. You can use it to translate a single test plan or a batch of test plans to TSNCs YAML files. Every Thread Group will be made into a single file. You can then add these files to your configuration settings, modify and run them by hand.
+Every Thread Group will be made into a single file. You can then add these files to your configuration settings, modify or extend them and run them by hand. 
 
-<add instructions.>
+<export from an ide, for example eclipse/ or add executable jar?>
 
-Executing a test from Jmeter uses the same backend translation as convertion, so the same limits apply. Read the documentation below and feel free to open an issue. 
+`java -jar /path/to/JmeterConverter.jar /path/to/jmxfiles/*.jmx`
+The YAML files are created in the same directory the .jmx files are. Their names are consist of `"name of the file"*-*"name of the thread group"`. If a file already exists, the converter adds a rhombus add the end `"name of the file"*-*"name of the thread group##"`. To see how you can add these files to your configurations and execute them, take a look ath the [Quickstart](https://github.com/Xceptance/testsuite-nocoding/wiki/Quickstart#setup) guide.
 
 ## Possible errors from the translation
+
+- **User Defined Variables:** No matter where the variables were defined in Jmeter, they will be defined at the start of the test case when running on or converting to TSNC. Later User Defined Variables will overwrite earlier User Defined Variables for the whole test case. 
+- **HTTP Request Defaults:** Default Protocol, Website and Path do not exist in the Converter. They are just added to the Url of every single action (unless overwritten). 
 
 - **HTTP Requests:** The redirect and keep alive options from the HTTP Requests are ignored.  
 - **Http response code:** TSNC automatically validates every actions Http response code. 200 -> Ok. 301 -> Failure.  
@@ -111,11 +119,11 @@ The Thread Group similarily provides it's name for the YAML file. It also divide
 
 #### User Defined Variables
 
-User Defined Variables can be read inside the Test Plan, the Thread Group or inside an action. In either case the variables are saved into the interpreter. Since they are always saved into the interpreter and the values interpreter is the same for every action inside a Thread Group, all User Defined Variables are defined right at the start. Overwriting doesn't work. <verify and work on that and add to problem sources>
+User Defined Variables can be read inside the Test Plan, the Thread Group or inside an action. In either case the variables are saved into the interpreter. Since they are always saved into the interpreter and the interpreter is the same for every action inside a Thread Group, all User Defined Variables are defined right at the start. Overwriting doesn't work.
 
 #### HTTP Request Defaults
 
-Server/Website, Path, Protocol and Parameters are read and saved as defaults for later actions.
+Server/Website, Path, Protocol and Parameters are read and saved as defaults for later actions. Protocol, Website, and Path are added together when creating the action.  
 
 #### HTTP Header Manager
 

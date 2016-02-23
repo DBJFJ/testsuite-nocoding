@@ -28,7 +28,7 @@ public class JmeterConverter {
 	public static void main(String... args) throws IOException {
 					
 		// if there are no arguments ...
-		if (args.length == 0 ) { 		// check that TODO
+		if (args.length == 0 ) { 		
 			throw new IllegalArgumentException("No input found");
 		}
 		
@@ -56,6 +56,13 @@ public class JmeterConverter {
 				
 			// get the folder in which to dump the files and the name of the test plan
 			dumpFolder = Paths.get(filePath).getParent();
+			if (dumpFolder == null) {
+				dumpFolder = Paths.get("./");
+			}		
+			
+			// DEBUG
+			System.out.println("dumpFolder: " + dumpFolder);
+			
 			String testplanName = FilenameUtils.getBaseName(filePath);
 				
 			LinkedHashMap<String, List<URLActionData>> ThreadGroups = 
@@ -72,11 +79,16 @@ public class JmeterConverter {
 					
 				// If the file already exists. Say, because the names were the same
 					
-				while (Files.exists(Paths.get(dumpFolder + fileName + ".yml"))) {
-					XltLogger.runTimeLogger.info("File " + dumpFolder + fileName + ".yml" + " already exists");
-					fileName = fileName + "#";
-				}
 				Path dumpThere = Paths.get(dumpFolder + "/" + fileName + ".yml");
+				while (Files.exists(dumpThere)) {
+					XltLogger.runTimeLogger.info(dumpThere.toString() + " already exists");
+					
+					// DEBUG
+					System.out.println("dumpFolder: " + dumpFolder + ", fileName: " + fileName);
+					
+					fileName = fileName + "#";
+					dumpThere = Paths.get(dumpFolder + "/" + fileName + ".yml");
+				}
 				XltLogger.runTimeLogger.info("Writing to " + dumpThere);
 				
 				// dump the actionlist

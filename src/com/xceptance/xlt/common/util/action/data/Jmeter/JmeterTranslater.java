@@ -1731,7 +1731,7 @@ public class JmeterTranslater {
 						if (1 < match) {
 							String reason = "Can only extract from first match. "
 									+ name
-									+ "intented to extract from a later match.";
+									+ " intented to extract from a later match.";
 							logAndThrow(reason);
 						}
 					}
@@ -1743,7 +1743,7 @@ public class JmeterTranslater {
 						XltLogger.runTimeLogger
 								.warn("No match was set for Regex Extractor "
 										+ name + "."
-										+ "Extracting from first match ... ");
+										+ " Extracting from first match ... ");
 					}
 					// end match ...
 					break;
