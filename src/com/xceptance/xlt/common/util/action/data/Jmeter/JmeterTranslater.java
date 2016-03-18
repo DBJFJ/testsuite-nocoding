@@ -289,18 +289,18 @@ public class JmeterTranslater
 	private URLActionDataBuilder actionBuilder;
 
 	/**
-	 * The reader used to parse the xml. Almost every method in this class moves 
+	 * The reader used to parse the xml. Almost every method in this class moves
 	 * the reader forwards.
 	 */
 	private XMLEventReader reader;
-	
+
 	/**
 	 * The variables that are valid for the whole test plan, not just a single
 	 * Thread Group.
 	 */
 	private List<NameValuePair> testplanVariables = new ArrayList<>();
-	
-	// TODO
+
+	// TODO make it static ?
 	public JmeterTranslater()
 	{
 
@@ -407,19 +407,10 @@ public class JmeterTranslater
 
 		List<NameValuePair> variables = new ArrayList<>();
 
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_TEST_PLAN))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_TEST_PLAN))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// the way the correct tag is found here is somewhat sloppy
 			if (event.isStartElement())
@@ -452,20 +443,13 @@ public class JmeterTranslater
 		this.actionBuilder = new URLActionDataBuilder();
 		actionBuilder.setInterpreter(interpreter);
 
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_THREAD_GROUP))
 		{
-			XMLEvent event = reader.nextEvent();
+			 event = reader.nextEvent();
 
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_THREAD_GROUP))
-				{
-					break;
-				}
-			}
-			// many of Jmeters Load Test Configurations are here
+			 // many of Jmeters Load Test Configurations are here
+			 // but we don't read them, so ...
 		}
 
 		// read the content of the ThreadGroup the first tag should be right here,
@@ -477,25 +461,18 @@ public class JmeterTranslater
 		int treeLevel = 0;
 		while (true)
 		{
-			XMLEvent event = reader.nextEvent();
+			event = reader.nextEvent();
 
-			if (event.isEndElement())
+			if (isEnd(event, TNAME_CONTENT))
 			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_CONTENT))
-				{
-					if (name.equals(TNAME_CONTENT))
-					{
-						treeLevel--;
+				treeLevel--;
 
-						if (treeLevel == 0)
-						{
-							break;
-						}
-					}
+				if (treeLevel == 0)
+				{
+					break;
 				}
 			}
+
 
 			// check the events attribute name name and delegate to a
 			// subfunction accordingly
@@ -563,22 +540,12 @@ public class JmeterTranslater
 		XltLogger.runTimeLogger.debug("Storing Variables ...");
 
 		// loop until the next element is an EndElement that closes
-		// the TNAMEVARS tag
+		// the TNAME_VARS tag
 
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_VARS))
 		{
-
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_VARS))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements ...
 			if (event.isStartElement())
@@ -625,26 +592,14 @@ public class JmeterTranslater
 		String argsName = null;
 		String argsValue = null;
 
-		// loop until the next Element is an EndElement with
-		// the tag name of TNAMEVAR
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_VAR))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_VAR))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
 			{
-
 				StartElement se = event.asStartElement();
 
 				// if the attribute for 'name' exists
@@ -689,20 +644,10 @@ public class JmeterTranslater
 	 */
 	private void readDefaults() throws XMLStreamException
 	{
-
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_TEST_CONFIG))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_TEST_CONFIG))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -773,19 +718,11 @@ public class JmeterTranslater
 	{
 
 		List<NameValuePair> headers = new ArrayList<NameValuePair>();
-		while (true)
-		{
-			XMLEvent event = reader.nextEvent();
 
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String tagName = getTagName(ee);
-				if (tagName.equals(TNAME_HEADERS))
-				{
-					break;
-				}
-			}
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_HEADERS))
+		{
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -816,19 +753,10 @@ public class JmeterTranslater
 		String name = null;
 		String value = null;
 
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_HEADER))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String tagName = getTagName(ee);
-				if (tagName.equals(TNAME_HEADER))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -861,14 +789,14 @@ public class JmeterTranslater
 	 * upon a StartElement for an action {@link #TNAME_ACTION}. Parses the file
 	 * and creates the action with the appropriate properties. Returns the action
 	 * when it comes upon the EndElement.
+	 * 
 	 * @param testName
 	 *            and the name of the action to read
 	 * 
 	 * @return an {@link URLActionData} object
 	 * @throws XMLStreamException
 	 */
-	private URLActionData readAction(String testName)
-			throws XMLStreamException
+	private URLActionData readAction(String testName) throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Reading new Action: " + testName + "...");
@@ -893,21 +821,11 @@ public class JmeterTranslater
 		actionBuilder.setInterpreter(interpreter);
 
 		// keep reading until an EndElement with the tag name of
-		// TNAMEACTION is the next element
-		while (true)
+		// TNAME_ACTION is the next element
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_ACTION))
 		{
-
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_ACTION))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -1013,26 +931,14 @@ public class JmeterTranslater
 	 */
 	private List<NameValuePair> readParameters() throws XMLStreamException
 	{
-
 		List<NameValuePair> parameters = new ArrayList<>();
 		parameters.addAll(defaultParameters);
 
-		// loop until the loop is closed with an EndElement with the tag name
-		// TNAMEPARAMS
-		// all parameters should be inside a single collectionProp tag
-		while (true)
+		// all parameters should be inside a single TNAME_PARAMS tag
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_PARAMS))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_PARAMS))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for startelements ...
 			if (event.isStartElement())
@@ -1065,6 +971,7 @@ public class JmeterTranslater
 	 * Parses a single Parameter with encoding, name and value. Sets the former and adds the
 	 * NameValuePair with name and value to the correct list.
 	 * </p>
+	 * 
 	 * @param parameters
 	 *            and the List of parameters which were already saved previously
 	 * 
@@ -1080,26 +987,15 @@ public class JmeterTranslater
 		String parameterValue = null;
 
 		// loop until the loop is closed with an EndElement with the tag name
-		// TNAMEPARAM
-		// all parameters should be inside a single TNAME_PARAM tag
-		while (true)
+		// TNAME_PARAM all parameters should be inside a single TNAME_PARAM tag
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_PARAM))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
-				if (name.equals(TNAME_PARAM))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
 			{
-
 				StartElement se = event.asStartElement();
 
 				String name = getAttributeValue(ATTRN_NAME, se);
@@ -1148,10 +1044,10 @@ public class JmeterTranslater
 	 * Reads the stuff inside an action, like Extractions and Assertions. Called
 	 * in {@link #readAction}. Reads until the {@link #TNAME_CONTENT} tag that
 	 * closes the {@link #TNAME_CONTENT} tag right after the action.
+	 * 
 	 * @throws XMLStreamException
 	 */
-	private void readActionContent()
-			throws XMLStreamException
+	private void readActionContent() throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Reading new actions content: " + actionBuilder.getName()
@@ -1169,25 +1065,20 @@ public class JmeterTranslater
 		// tag that closes. Exit when zero is reached. (To make sure you exit
 		// with the right
 		// tag.)
+
 		int treeLevel = 0;
 
 		while (true)
 		{
 			XMLEvent event = reader.nextEvent();
 
-			if (event.isEndElement())
+			if (isEnd(event, TNAME_CONTENT))
 			{
-				EndElement ee = event.asEndElement();
-				String name = getTagName(ee);
+				treeLevel--;
 
-				if (name.equals("hashTree"))
+				if (treeLevel == 0)
 				{
-					treeLevel--;
-
-					if (treeLevel == 0)
-					{
-						break;
-					}
+					break;
 				}
 			}
 
@@ -1203,7 +1094,6 @@ public class JmeterTranslater
 				{
 				case TNAME_CONTENT:
 				{
-
 					// we just went a bit further down in the tree
 					treeLevel++;
 					break;
@@ -1229,7 +1119,7 @@ public class JmeterTranslater
 					// read the XPathExtractor
 					storeBuilder.setInterpreter(interpreter);
 					storeBuilder.setSelectionMode(URLActionDataStore.XPATH);
-					URLActionDataStore store = readXPathExtractor(storeBuilder);
+					URLActionDataStore store = readXPathExtractor(reader, storeBuilder);
 
 					storeList.add(store);
 					storeBuilder.reset();
@@ -1241,7 +1131,8 @@ public class JmeterTranslater
 					// read regexExtractor
 					String selectionMode = URLActionDataStore.REGEXP;
 					storeBuilder.setInterpreter(interpreter);
-					URLActionDataStore store = readRegexExtractor(selectionMode, storeBuilder);
+					URLActionDataStore store = readRegexExtractor(selectionMode, reader,
+							storeBuilder);
 
 					storeList.add(store);
 					storeBuilder.reset();
@@ -1285,8 +1176,7 @@ public class JmeterTranslater
 	 *            the name of the validation(s)
 	 * @throws XMLStreamException
 	 */
-	private void readResponseAssertion(String name)
-			throws XMLStreamException
+	private void readResponseAssertion(String name) throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Reading validation: " + name + "...");
@@ -1305,19 +1195,10 @@ public class JmeterTranslater
 			// loop until the loop is closed with an EndElement with the tag
 			// name TNAME_ASSERT_RESP
 			// all parameters should be inside a single TNAME_ASSERT_RESP tag
-			while (true)
+			XMLEvent event = reader.nextEvent();
+			while (!isEnd(event, TNAME_ASSERT_RESP))
 			{
-				XMLEvent event = reader.nextEvent();
-
-				if (event.isEndElement())
-				{
-					EndElement ee = event.asEndElement();
-					String tagName = getTagName(ee);
-					if (tagName.equals(TNAME_ASSERT_RESP))
-					{
-						break;
-					}
-				}
+				event = reader.nextEvent();
 
 				// look for StartElements
 				if (event.isStartElement())
@@ -1406,7 +1287,6 @@ public class JmeterTranslater
 		}
 		catch (MappingException e)
 		{
-
 			// there was obviously an error, don't create the validation/ Assertion
 			XltLogger.runTimeLogger.error("Jmeter -> TSNC mapping of " + name + ""
 					+ "coudn't be finished correctly");
@@ -1476,7 +1356,7 @@ public class JmeterTranslater
 			}
 			break;
 
-		// and this stuff that is just impossible in TSNC ...
+		// and this stuff just isn't possible in TSNC ...
 
 		case CHAR_ASSERT_RESP_MESSAGE:
 			// can't validate the response message
@@ -1577,19 +1457,10 @@ public class JmeterTranslater
 
 		List<String> allValidationContent = new ArrayList<>();
 
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_ASSERT_ALL_VALUES))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String tagName = getTagName(ee);
-				if (tagName.equals(TNAME_ASSERT_ALL_VALUES))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -1723,35 +1594,29 @@ public class JmeterTranslater
 	 * Should be called when the {@link #readActionContent} method comes upon a
 	 * {@link #TNAME_XPATH_EXTRACT} tag. Reads until the end of the {@link #TNAME_XPATH_EXTRACT} tag
 	 * and returns an {@link URLActionDataStore} object.
+	 * 
+	 * @param reader
+	 *            the XMLEventReader with it's position
 	 * @param storeBuilder
 	 *            the storeBuilder with the interpreter and the selectionMode
 	 *            already added
-	 * 
 	 * @return a {@link URLActionDataStore} object
 	 * @throws XMLStreamException
 	 */
-	private URLActionDataStore readXPathExtractor(URLActionDataStoreBuilder storeBuilder) throws XMLStreamException
+	private URLActionDataStore readXPathExtractor(XMLEventReader reader,
+			URLActionDataStoreBuilder storeBuilder) throws XMLStreamException
 	{
 
 		String name = null;
 		String selectionContent = null;
 
 		// loop until the loop is closed with an EndElement with the tag name
-		// TNAMEXPATHEXTRACT
+		// TNAME_XPATH_EXTRACT
 		// all parameters should be inside a single TNAME_XPATH_EXTRACT tag
-		while (true)
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_XPATH_EXTRACT))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String tagName = getTagName(ee);
-				if (tagName.equals(TNAME_XPATH_EXTRACT))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -1809,11 +1674,13 @@ public class JmeterTranslater
 	 * and returns an URLActionDataStore object.
 	 * 
 	 * @param selectionMode
+	 * @param reader
 	 * @param storeBuilder
 	 * @return
 	 * @throws XMLStreamException
 	 */
-	private URLActionDataStore readRegexExtractor(String selectionMode, URLActionDataStoreBuilder storeBuilder) throws XMLStreamException
+	private URLActionDataStore readRegexExtractor(String selectionMode, XMLEventReader reader,
+			URLActionDataStoreBuilder storeBuilder) throws XMLStreamException
 	{
 
 		String group = null;
@@ -1822,21 +1689,11 @@ public class JmeterTranslater
 		String subSelectionMode = null;
 		String subSelectionContent = null;
 
-		// loop until the loop is closed with an EndElement with the tag name
-		// all parameters should be inside a single tag
-		while (true)
+		// start the loop ...
+		XMLEvent event = reader.nextEvent();
+		while (!isEnd(event, TNAME_REGEX_EXTRACT))
 		{
-			XMLEvent event = reader.nextEvent();
-
-			if (event.isEndElement())
-			{
-				EndElement ee = event.asEndElement();
-				String tagName = getTagName(ee);
-				if (tagName.equals(TNAME_REGEX_EXTRACT))
-				{
-					break;
-				}
-			}
+			event = reader.nextEvent();
 
 			// look for StartElements
 			if (event.isStartElement())
@@ -1983,6 +1840,30 @@ public class JmeterTranslater
 		storeBuilder.setSubSelectionContent(subSelectionContent);
 		URLActionDataStore store = storeBuilder.build();
 		return store;
+	}
+
+	/**
+	 * True if the passed event is an EndElement with the passed tagname.
+	 * False otherwise.
+	 * 
+	 * @param event
+	 * @param tagname
+	 * @return
+	 */
+	private boolean isEnd(XMLEvent event, String tagname)
+	{
+		if (event.isEndElement())
+		{
+			EndElement endelement = event.asEndElement();
+			String name = getTagName(endelement);
+
+			if (name.equals(tagname))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
