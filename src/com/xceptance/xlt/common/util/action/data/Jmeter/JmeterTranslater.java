@@ -254,17 +254,17 @@ public class JmeterTranslater
 	 * Underscores are used for readability.
 	 */
 
-	private final String CHAR_ASSERT_RESP_HEADER = "Assertion.response_headers";
+	private static final String CHAR_ASSERT_RESP_HEADER = "Assertion.response_headers";
 
-	private final String CHAR_ASSERT_RESP_MESSAGE = "Assertion.response_message";
+	private static final String CHAR_ASSERT_RESP_MESSAGE = "Assertion.response_message";
 
-	private final String CHAR_ASSERT_RESP_CODE = "Assertion.response_code";
+	private static final String CHAR_ASSERT_RESP_CODE = "Assertion.response_code";
 
-	private final String CHAR_ASSERT_TEXT = "Assertion.response_data";
+	private static final String CHAR_ASSERT_TEXT = "Assertion.response_data";
 
-	private final String CHAR_ASSERT_DOCUMENT = "Assertion.response_data_as_document";
+	private static final String CHAR_ASSERT_DOCUMENT = "Assertion.response_data_as_document";
 
-	private final String CHAR_ASSERT_URL = "Assertion.sample_label";
+	private static final String CHAR_ASSERT_URL = "Assertion.sample_label";
 
 	// finally all the xml constants used in this class are defined ...
 
@@ -272,13 +272,13 @@ public class JmeterTranslater
 	 * If the {{@link #getAttributeValue(StartElement, String)} method was used but the attribute
 	 * wasn't found, it will return this value instead.
 	 */
-	private final String NOT_FOUND = "Attribute not found";
+	private static final String NOT_FOUND = "Attribute not found";
 
 	/**
 	 * If the respnse code should be validated (instead of the response data or
 	 * the response header), the selectionMode is temporarily set to this.
 	 */
-	private final String VALIDATE_RESP_CODE = "respCode";
+	private static final String VALIDATE_RESP_CODE = "respCode";
 
 	/*
 	 * The default settings for http protocol, website and path do not
@@ -286,44 +286,38 @@ public class JmeterTranslater
 	 * constants as keys. 
 	 */
 
-	private final String DEF_PROTOCOL = "defaultProtocol";
+	private static final String DEF_PROTOCOL = "defaultProtocol";
 
-	private final String DEF_WEBSITE = "defaultRootWebsite";
+	private static final String DEF_WEBSITE = "defaultRootWebsite";
 
-	private final String DEF_PATH = "defaultPath";
+	private static final String DEF_PATH = "defaultPath";
 
-	private List<NameValuePair> defaultParameters = new ArrayList<NameValuePair>();
+	private static List<NameValuePair> defaultParameters = new ArrayList<NameValuePair>();
 
 	/*
 	 * the rest ...
 	 */
 
-	private ParameterInterpreter interpreter;
+	private static ParameterInterpreter interpreter;
 
 	/**
 	 * The actionbuilder that is used to build the actions.
 	 * Many methods add to the actionbuilder, it is resetted after
 	 * an action is build.
 	 */
-	private URLActionDataBuilder actionBuilder;
+	private static URLActionDataBuilder actionBuilder;
 
 	/**
 	 * The reader used to parse the xml. Almost every method in this class moves
 	 * the reader forwards.
 	 */
-	private XMLEventReader reader;
+	private static XMLEventReader reader;
 
 	/**
 	 * The variables that are valid for the whole test plan, not just a single
 	 * Thread Group.
 	 */
-	private List<NameValuePair> testplanVariables = new ArrayList<>();
-
-	// TODO make it static ?
-	public JmeterTranslater()
-	{
-
-	}
+	private static List<NameValuePair> testplanVariables;
 
 	/**
 	 * Transforms the .jmx file from Jmeter into a map of a list of URLActionData
@@ -336,12 +330,16 @@ public class JmeterTranslater
 	 * @see com.xceptance.xlt.common.util.action.data.URLActionDataListBuilder#
 	 *      buildURLActionDataList()
 	 */
-	public LinkedHashMap<String, List<URLActionData>> translateFile(String filePath)
+	public static LinkedHashMap<String, List<URLActionData>> translateFile(String filePath)
 	{
-
+		// initialize a bit. This ensures we don't take anything from previous
+		// runs with us.
 		LinkedHashMap<String, List<URLActionData>> threadGroups = new LinkedHashMap<>();
+		testplanVariables = new ArrayList<>();
+		
 		XltLogger.runTimeLogger.debug("Starting Jmeter -> TSNC translation ...");
 
+		// start the XML parsing ...
 		try
 		{
 			InputStream inputstream = new FileInputStream(filePath);
@@ -371,7 +369,7 @@ public class JmeterTranslater
 					defaultParameters = new ArrayList<NameValuePair>();
 					XltProperties properties = XltProperties.getInstance();
 					GeneralDataProvider dataProvider = GeneralDataProvider.getInstance();
-					this.interpreter = new ParameterInterpreter(properties, dataProvider);
+					interpreter = new ParameterInterpreter(properties, dataProvider);
 
 					// but we do want the variables declared in the testplan
 					for (NameValuePair nvp : testplanVariables)
@@ -413,7 +411,7 @@ public class JmeterTranslater
 	 * @return a list of {@link NameValuePair}
 	 * @throws XMLStreamException
 	 */
-	private List<NameValuePair> readVarsInTestPlan() throws XMLStreamException
+	private static List<NameValuePair> readVarsInTestPlan() throws XMLStreamException
 	{
 
 		List<NameValuePair> variables = new ArrayList<>();
@@ -440,11 +438,11 @@ public class JmeterTranslater
 	 * @return a list of URLActionData objects to be returned by this builder
 	 * @throws XMLStreamException
 	 */
-	private List<URLActionData> readThreadGroup() throws XMLStreamException
+	private static List<URLActionData> readThreadGroup() throws XMLStreamException
 	{
 
 		List<URLActionData> testCaseActions = new ArrayList<URLActionData>();
-		this.actionBuilder = new URLActionDataBuilder();
+		actionBuilder = new URLActionDataBuilder();
 		actionBuilder.setInterpreter(interpreter);
 
 		XMLEvent event = reader.nextEvent();
@@ -520,7 +518,7 @@ public class JmeterTranslater
 	 * 
 	 * @throws XMLStreamException
 	 */
-	private void readVariables() throws XMLStreamException
+	private static void readVariables() throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Storing Variables ...");
@@ -556,7 +554,7 @@ public class JmeterTranslater
 	 * @return the variable as a {@link NameValuePair}
 	 * @throws XMLStreamException
 	 */
-	private NameValuePair readVariable() throws XMLStreamException
+	private static NameValuePair readVariable() throws XMLStreamException
 	{
 
 		String argsName = null;
@@ -592,7 +590,7 @@ public class JmeterTranslater
 	 * 
 	 * @throws XMLStreamException
 	 */
-	private void readDefaults() throws XMLStreamException
+	private static void readDefaults() throws XMLStreamException
 	{
 		XMLEvent event = reader.nextEvent();
 		while (!isEnd(event, Tagname.TEST_CONFIG))
@@ -659,7 +657,7 @@ public class JmeterTranslater
 	 *         value
 	 * @throws XMLStreamException
 	 */
-	private List<NameValuePair> readHeaders() throws XMLStreamException
+	private static List<NameValuePair> readHeaders() throws XMLStreamException
 	{
 
 		List<NameValuePair> headers = new ArrayList<NameValuePair>();
@@ -685,7 +683,7 @@ public class JmeterTranslater
 	 * @return a NameValuePair equivalent to a single header with name and value
 	 * @throws XMLStreamException
 	 */
-	private NameValuePair readHeader() throws XMLStreamException
+	private static NameValuePair readHeader() throws XMLStreamException
 	{
 		String name = null;
 		String value = null;
@@ -725,7 +723,7 @@ public class JmeterTranslater
 	 * @return an {@link URLActionData} object
 	 * @throws XMLStreamException
 	 */
-	private URLActionData readAction(String testName) throws XMLStreamException
+	private static URLActionData readAction(String testName) throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Reading new Action: " + testName + "...");
@@ -836,7 +834,7 @@ public class JmeterTranslater
 	 * @return parameters
 	 * @throws XMLStreamException
 	 */
-	private List<NameValuePair> readParameters() throws XMLStreamException
+	private static List<NameValuePair> readParameters() throws XMLStreamException
 	{
 		List<NameValuePair> parameters = new ArrayList<>();
 		parameters.addAll(defaultParameters);
@@ -873,7 +871,7 @@ public class JmeterTranslater
 	 * 
 	 * @throws XMLStreamException
 	 */
-	private List<NameValuePair> readParameter(List<NameValuePair> parameters)
+	private static List<NameValuePair> readParameter(List<NameValuePair> parameters)
 			throws XMLStreamException
 	{
 
@@ -920,7 +918,7 @@ public class JmeterTranslater
 	 * 
 	 * @throws XMLStreamException
 	 */
-	private void readActionContent() throws XMLStreamException
+	private static void readActionContent() throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Reading new actions content: " + actionBuilder.getName()
@@ -1026,7 +1024,7 @@ public class JmeterTranslater
 	 *            the name of the validation(s)
 	 * @throws XMLStreamException
 	 */
-	private void readResponseAssertion(String name) throws XMLStreamException
+	private static void readResponseAssertion(String name) throws XMLStreamException
 	{
 
 		XltLogger.runTimeLogger.debug("Reading validation: " + name + "...");
@@ -1137,7 +1135,7 @@ public class JmeterTranslater
 	 *            already) null otherwise)
 	 * @return the selectionMode in TSNC
 	 */
-	private String getSelectionModeFromJmt(String selectionModeInJmt, String selectionMode)
+	private static String getSelectionModeFromJmt(String selectionModeInJmt, String selectionMode)
 	{
 
 		switch (selectionModeInJmt)
@@ -1219,7 +1217,7 @@ public class JmeterTranslater
 	 *            integer value.
 	 * @return the validationMode from TSNC
 	 */
-	private String getValidationModeFromInt(int valModeInInt)
+	private static String getValidationModeFromInt(int valModeInInt)
 	{
 
 		String validationMode = null;
@@ -1282,7 +1280,7 @@ public class JmeterTranslater
 	 * @return multiple String aquivalent to multiple validationContents
 	 * @throws XMLStreamException
 	 */
-	private List<String> readAllValuesToValidate() throws XMLStreamException
+	private static List<String> readAllValuesToValidate() throws XMLStreamException
 	{
 
 		List<String> allValidationContent = new ArrayList<>();
@@ -1328,7 +1326,7 @@ public class JmeterTranslater
 	 * @param validationMode
 	 * @param allValidationContent
 	 */
-	private void createValidations(String name, String selectionMode, String selectionContent,
+	private static void createValidations(String name, String selectionMode, String selectionContent,
 			String validationMode, List<String> allValidationContent)
 	{
 
@@ -1423,7 +1421,7 @@ public class JmeterTranslater
 	 * @return a {@link URLActionDataStore} object
 	 * @throws XMLStreamException
 	 */
-	private URLActionDataStore readXPathExtractor(XMLEventReader reader,
+	private static URLActionDataStore readXPathExtractor(XMLEventReader reader,
 			URLActionDataStoreBuilder storeBuilder) throws XMLStreamException
 	{
 
@@ -1476,7 +1474,7 @@ public class JmeterTranslater
 	 * @return
 	 * @throws XMLStreamException
 	 */
-	private URLActionDataStore readRegexExtractor(String selectionMode, XMLEventReader reader,
+	private static URLActionDataStore readRegexExtractor(String selectionMode, XMLEventReader reader,
 			URLActionDataStoreBuilder storeBuilder) throws XMLStreamException
 	{
 
@@ -1624,7 +1622,7 @@ public class JmeterTranslater
 	 * @param tagname
 	 * @return
 	 */
-	private boolean isStart(XMLEvent event, Tagname tagname)
+	private static boolean isStart(XMLEvent event, Tagname tagname)
 	{
 		if (event.isStartElement())
 		{
@@ -1648,7 +1646,7 @@ public class JmeterTranslater
 	 * @param tagname
 	 * @return
 	 */
-	private boolean isEnd(XMLEvent event, Tagname tagname)
+	private static boolean isEnd(XMLEvent event, Tagname tagname)
 	{
 		if (event.isEndElement())
 		{
@@ -1673,7 +1671,7 @@ public class JmeterTranslater
 	 * @param attribute
 	 * @return
 	 */
-	private boolean hasAttribute(XMLEvent event, AttributeNameValue attribute)
+	private static boolean hasAttribute(XMLEvent event, AttributeNameValue attribute)
 	{
 		if (event.isStartElement())
 		{
@@ -1696,7 +1694,7 @@ public class JmeterTranslater
 	 *            the StartElement
 	 * @return it's tag name as a String
 	 */
-	private String getTagName(StartElement se)
+	private static String getTagName(StartElement se)
 	{
 		QName qname = se.getName();
 		String name = qname.getLocalPart();
@@ -1711,7 +1709,7 @@ public class JmeterTranslater
 	 *            the EndElement
 	 * @return it's tag name as a String
 	 */
-	private String getTagName(EndElement ee)
+	private static String getTagName(EndElement ee)
 	{
 		QName qname = ee.getName();
 		String name = qname.getLocalPart();
@@ -1730,7 +1728,7 @@ public class JmeterTranslater
 	 * 
 	 * @return and the value of the attribute as a string
 	 */
-	private String getAttributeValue(StartElement se, String attributeName)
+	private static String getAttributeValue(StartElement se, String attributeName)
 	{
 
 		String attributeValue = null;
@@ -1759,7 +1757,7 @@ public class JmeterTranslater
 	 * @return said event as a string. If there was no content, return the
 	 *         warning as a string.
 	 */
-	private String getTagContent(XMLEvent event)
+	private static String getTagContent(XMLEvent event)
 	{
 		if (event.isCharacters())
 		{
@@ -1784,7 +1782,7 @@ public class JmeterTranslater
 	 * @param var
 	 * @return
 	 */
-	private boolean isVarInInterpreter(String name)
+	private static boolean isVarInInterpreter(String name)
 	{
 
 		for (String var : interpreter.getNameSpace().getVariableNames())
@@ -1802,7 +1800,7 @@ public class JmeterTranslater
 	 * Declares the custom mapping exception for better error handling.
 	 */
 	@SuppressWarnings("serial")
-	public class MappingException extends RuntimeException
+	public static class MappingException extends RuntimeException
 	{
 
 		public MappingException()
@@ -1834,7 +1832,7 @@ public class JmeterTranslater
 	 * 
 	 * @param reason
 	 */
-	private void logAndThrow(String reason)
+	private static void logAndThrow(String reason)
 	{
 		String message = "Coudn't map the test case from Jmeter to TSNC." + "Reason: " + reason;
 

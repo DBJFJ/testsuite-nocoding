@@ -63,7 +63,7 @@ public class JmeterConverter {
 			String testplanName = FilenameUtils.getBaseName(filePath);
 				
 			LinkedHashMap<String, List<URLActionData>> ThreadGroups = 
-											new JmeterTranslater().translateFile(filePath);
+					JmeterTranslater.translateFile(filePath);
 				
 			// iterate over the ThreadGroups
 			for (Entry<String, List<URLActionData>> ThreadGroup : ThreadGroups.entrySet()) {

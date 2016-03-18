@@ -64,9 +64,8 @@ public class JMXBasedURLActionDataListBuilder extends URLActionDataListBuilder {
 		XltLogger.runTimeLogger
 				.debug("Starting Jmeter -> TSNC translation ...");
 
-		JmeterTranslater translater = new JmeterTranslater();
 		LinkedHashMap<String, List<URLActionData>> everything = 
-							translater.translateFile(filePath);
+				JmeterTranslater.translateFile(filePath);
 		
 		// get the first thread group
 		actions = everything.entrySet().iterator().next().getValue();

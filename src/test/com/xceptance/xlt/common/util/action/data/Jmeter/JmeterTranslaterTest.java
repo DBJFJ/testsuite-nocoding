@@ -36,14 +36,12 @@ public class JmeterTranslaterTest {
 	private final String filePath4 = rootPath + "/impossible/";
 	private final String stringNotExistingFile = "notExistingFile";
     private final String fileEmptyFile = rootPath + "emptyFile.yml";
-	   
-	private final JmeterTranslater translater = new JmeterTranslater();
-   
+	     
     @Test(expected = IllegalArgumentException.class)
     public void testOutputForUnExistingFile()
     {
     	final LinkedHashMap<String, List<URLActionData>> TGroups = 
-    						translater.translateFile(stringNotExistingFile);
+    						JmeterTranslater.translateFile(stringNotExistingFile);
         Assert.assertTrue(TGroups.isEmpty());
     }
     
@@ -51,7 +49,7 @@ public class JmeterTranslaterTest {
     public void testOutputForEmptyFile()
     {       
     	final LinkedHashMap<String, List<URLActionData>> TGroups = 
-				translater.translateFile(fileEmptyFile);
+    			JmeterTranslater.translateFile(fileEmptyFile);
     	Assert.assertTrue(TGroups.isEmpty());
     }
 	
@@ -66,7 +64,7 @@ public class JmeterTranslaterTest {
 	@Test
 	public void testActions() {		
     	final LinkedHashMap<String, List<URLActionData>> TGroups = 
-    												translater.translateFile(filePath1);
+    			JmeterTranslater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
     	
 		// check the number of actions 
@@ -158,7 +156,7 @@ public class JmeterTranslaterTest {
 	 */
 	@Test 
 	public void testHttpDefaults() {
-		LinkedHashMap<String, List<URLActionData>> TGroups = translater.translateFile(filePath1);
+		LinkedHashMap<String, List<URLActionData>> TGroups = JmeterTranslater.translateFile(filePath1);
 		
 		List<URLActionData> actions = getAllActions(TGroups);
 		
@@ -194,7 +192,7 @@ public class JmeterTranslaterTest {
 	public void testHeaders() {
 
 		final LinkedHashMap<String, List<URLActionData>> TGroups = 
-												translater.translateFile(filePath1);
+				JmeterTranslater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
 		// check the default header
@@ -245,7 +243,7 @@ public class JmeterTranslaterTest {
 	public void testProtocol() {
 		
 		final LinkedHashMap<String, List<URLActionData>> TGroups = 
-										translater.translateFile(filePath2);
+				JmeterTranslater.translateFile(filePath2);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
 		String[] urlExpected = {
@@ -277,7 +275,7 @@ public class JmeterTranslaterTest {
 	public void testVariables() throws EvalError {
 		
 		LinkedHashMap<String, List<URLActionData>> TGroups = 
-										translater.translateFile(filePath1);
+				JmeterTranslater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
 
 		
@@ -304,7 +302,7 @@ public class JmeterTranslaterTest {
 		
 		// check if variables that were defined in the Test Plan element are also read ...
 		
-		TGroups = translater.translateFile(filePath2);
+		TGroups = JmeterTranslater.translateFile(filePath2);
 		actions = getAllActions(TGroups);
 		
 		action = actions.get(0);
@@ -415,7 +413,7 @@ public class JmeterTranslaterTest {
 		};
 		
 		LinkedHashMap<String, List<URLActionData>> TGroups = 
-									translater.translateFile(filePath1);
+				JmeterTranslater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
 		// tests the sample test case
@@ -455,7 +453,7 @@ public class JmeterTranslaterTest {
 		}
 		
 		// tests if the response code is validated
-		TGroups = translater.translateFile(filePath2);
+		TGroups = JmeterTranslater.translateFile(filePath2);
 		actions = getAllActions(TGroups);
 		
 		URLActionData action = actions.get(0);
@@ -473,7 +471,7 @@ public class JmeterTranslaterTest {
 	public void testValidateHeaders() {
 			
 		LinkedHashMap<String, List<URLActionData>> TGroups = 
-						translater.translateFile(filePath1);
+				JmeterTranslater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
 
 		
@@ -520,7 +518,7 @@ public class JmeterTranslaterTest {
 	@Test
 	public void testXPathExtractions() {	
 		LinkedHashMap<String, List<URLActionData>> TGroups = 
-									translater.translateFile(filePath1);
+				JmeterTranslater.translateFile(filePath1);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
 		String[][][] extractedExpected = {
@@ -570,7 +568,7 @@ public class JmeterTranslaterTest {
 	public void testRegexExtractionPossible() {		
 		
 		LinkedHashMap<String, List<URLActionData>> TGroups = 
-							translater.translateFile(filePath3);
+				JmeterTranslater.translateFile(filePath3);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
 		String subSelectionModeExpected[] = {
@@ -617,7 +615,7 @@ public class JmeterTranslaterTest {
 			try {				
 				@SuppressWarnings("unused")
 				LinkedHashMap<String, List<URLActionData>> TGroups = 
-											translater.translateFile(fileName);				
+						JmeterTranslater.translateFile(fileName);				
 			}
 			catch (MappingException e) {
 				crashNum++;
@@ -634,7 +632,7 @@ public class JmeterTranslaterTest {
 	public void impossibleValidations() {
 		
 		LinkedHashMap<String, List<URLActionData>> TGroups = 
-													translater.translateFile(filePath2);
+				JmeterTranslater.translateFile(filePath2);
 		List<URLActionData> actions = getAllActions(TGroups);
 		
 		List<URLActionDataValidation> validations = actions.get(1).getValidations();
