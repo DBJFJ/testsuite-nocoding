@@ -3,17 +3,13 @@ package com.xceptance.xlt.common.util.action.data.Jmeter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
-import javax.xml.stream.Location;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -58,40 +54,40 @@ public class JmeterTranslater
 	public enum Tagname
 	{
 		// General ...
-		TEST_PLAN ("TestPlan"),
-		
+		TEST_PLAN("TestPlan"),
+
 		THREAD_GROUP("ThreadGroup"),
-		
+
 		TEST_CONFIG("ConfigTestElement"),
-		
+
 		// Action
-		ACTION ("HTTPSamplerProxy"),
+		ACTION("HTTPSamplerProxy"),
 
 		// Variables ...
-		VARS ("Arguments"),
+		VARS("Arguments"),
 
-		VAR ("elementProp"),
+		VAR("elementProp"),
 
 		// Parameters and Headers ...
-		PARAMS ("collectionProp"),
+		PARAMS("collectionProp"),
 
-		PARAM ("elementProp"),
+		PARAM("elementProp"),
 
-		HEADERS ("HeaderManager"),
+		HEADERS("HeaderManager"),
 
-		HEADER ("elementProp"),
+		HEADER("elementProp"),
 
 		// Extractors ...
-		XPATH_EXTRACT ("XPathExtractor"),
+		XPATH_EXTRACT("XPathExtractor"),
 
-		REGEX_EXTRACT ("RegexExtractor"),
+		REGEX_EXTRACT("RegexExtractor"),
 
 		// Response Assertion ...
-		ASSERT_RESP ("ResponseAssertion"),
+		ASSERT_RESP("ResponseAssertion"),
 
-		ASSERT_ALL_VALUES ("collectionProp"),
+		ASSERT_ALL_VALUES("collectionProp"),
 
-		ASSERT_ONE_CONTENT ("stringProp"),
+		ASSERT_ONE_CONTENT("stringProp"),
 
 		/**
 		 * Jmeter uses a tree structure, but the elements below a certain node
@@ -107,249 +103,147 @@ public class JmeterTranslater
 		 * In this example the inner 'hashtree' tag is for everything below the
 		 * assertion, the outer 'hashtree' tag for everything below the action.
 		 */
-		CONTENT ("hashTree");
-		
+		CONTENT("hashTree");
+
 		/**
 		 * The literal String that used in the XML file.
 		 */
 		private final String xmlName;
-		
+
 		Tagname(String name)
 		{
 			this.xmlName = name;
 		}
 	}
-	
+
 	/**
-	 * <p>These constants are used for the attribute names in Jmeter.
-	 * For example, in <HTTPSamplerProxy guiclass="HttpTestSampleGui"
-	 * testclass="HTTPSamplerProxy"
-	 * testname="test for correcting the mistake afterwards 1" enabled="true"> 
-	 * </br>
-	 * 'testname' is the attribute name for the name of the attribute which
-	 * defines the action name. The attributes are often used as a secondary name.
+	 * <p>
+	 * These constants are used for the attribute names in Jmeter. For example, in <HTTPSamplerProxy
+	 * guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy"
+	 * testname="test for correcting the mistake afterwards 1" enabled="true"> </br> 'testname' is
+	 * the attribute name for the name of the attribute which defines the action name. The
+	 * attributes are often used as a secondary name.
 	 */
 
 	public enum AttributeName
 	{
-		ATTRN_NAME ("name"),
+		NAME("name"),
 
-		ACTION_NAME ("testname"),
+		ACTION_NAME("testname"),
 
-		ASSERT_NAME ("testname"),
+		ASSERT_NAME("testname"),
 
-		ELEMENT_TYPE ("elementType");
+		ELEMENT_TYPE("elementType");
 
 		/**
 		 * The literal String that used in the XML file.
 		 */
 		private final String xmlName;
-		
+
 		AttributeName(String name)
 		{
 			this.xmlName = name;
 		}
 	}
-	
+
 	/**
 	 * The following constants are used for the attributes in Jmeter. For
 	 * example, in <stringProp
 	 * name="HTTPSampler.domain">${host}/search</stringProp> 'stringProp' is the
 	 * tag name, 'name' an attribute name and 'HTTPSampler.domain' an attribute
-	 * value. TODO expand and update
-	 */
-//	public enum Attribute
-//	{
-//		/**
-//		 * Determines whether to extract from the resonse message, just the response body,
-//		 * the resp. code or something else ...
-//		 */
-//		private final String ATTRV_REGEX_EXT_SCOPE = "RegexExtractor.useHeaders";
-//		/**
-//		 * The name if the attribute.
-//		 */
-//		private final AttributeName name;
-//		
-//		/**
-//		 * The literal String that used as the value in the XML file.
-//		 */
-//		private final String xmlValue;
-//		
-//		
-//		Attribute(String name, String value)
-//		{
-//			this.name = AttributeName.valueOf(name);
-//			this.xmlValue = value;
-//		}
-//	}
-	
-	// General ...
-	private final String TNAME_TEST_PLAN = "TestPlan";
-
-	private final String TNAME_THREAD_GROUP = "ThreadGroup";
-
-	private final String TNAME_TEST_CONFIG = "ConfigTestElement";
-
-	// Action
-
-	private final String TNAME_ACTION = "HTTPSamplerProxy";
-
-	// Variables ...
-	private final String TNAME_VARS = "Arguments";
-
-	private final String TNAME_VAR = "elementProp";
-
-	// Parameters and Headers ...
-	private final String TNAME_PARAMS = "collectionProp";
-
-	private final String TNAME_PARAM = "elementProp";
-
-	private final String TNAME_HEADERS = "HeaderManager";
-
-	private final String TNAME_HEADER = "elementProp";
-
-	// Extractors ...
-	private final String TNAME_XPATH_EXTRACT = "XPathExtractor";
-
-	private final String TNAME_REGEX_EXTRACT = "RegexExtractor";
-
-	// Response Assertion ...
-	private final String TNAME_ASSERT_RESP = "ResponseAssertion";
-
-	private final String TNAME_ASSERT_ALL_VALUES = "collectionProp";
-
-	private final String TNAME_ASSERT_ONE_CONTENT = "stringProp";
-
-	/*
-	 * Jmeter uses a tree structure, but the elements below a certain node
-	 * are not inside the xml tag in the .jmx file. Instead a hashtree tag
-	 * follows all tags with something below them in the tree structure. Inside
-	 * the hashtree tag are the nodes below the tag in question. For example: An
-	 * action which contains an assertion
-	 * 
-	 * <HTTPSamplerProxy ...> ...</HTTPSamplerProxy> <hashtree>
-	 * <ResponseAssertion ...> ... </ResponseAssertion> </br> <hashtree> ...
-	 * </hashtree> </hashtree>
-	 * 
-	 * In this example the inner 'hashtree' tag is for everything below the
-	 * assertion, the outer 'hashtree' tag for everything below the action.
-	 */
-	private final String TNAME_CONTENT = "hashTree";
-
-	/*
-	 * <p>The following constants are used for the attribute names in Jmeter.
-	 * For example, in <HTTPSamplerProxy guiclass="HttpTestSampleGui"
-	 * testclass="HTTPSamplerProxy"
-	 * testname="test for correcting the mistake afterwards 1" enabled="true">
-	 * 'testname' is the attribute name for the name of the attribute which
-	 * defines the action name.
-	 * 
-	 * The names follow the pattern ATTR (for attribute) + N (for name) +
-	 * abbreviation of their function. An "S" at the end signifies plural.
-	 * Underscores are used for readability.
-	 * 
-	 * Example: ATTRN_ACTION_NAME for attributeNameActionName.
-	 */
-
-	/*
-	 * The following is a name attribute often used to identify what kind of
-	 * element the tag is supposed to stand for. It is basically used as a
-	 * second tag name Example: <stringProp
-	 * name="HTTPSampler.domain">${host}/search</stringProp> <stringProp
-	 * name="HTTPSampler.port"></stringProp> <stringProp
-	 * name="HTTPSampler.connect_timeout"></stringProp> <stringProp
-	 * name="HTTPSampler.response_timeout"></stringProp> <stringProp
-	 * name="HTTPSampler.protocol"></stringProp>
-	 */
-
-	private final String ATTRN_NAME = "name";
-
-	private final String ATTRN_ACTION_NAME = "testname";
-
-	private final String ATTRN_ASSERT_NAME = "testname";
-
-	private final String ATTRN_ELE_TYPE = "elementType";
-
-	/*
-	 * The following constants are used for the attribute values in Jmeter. For
-	 * example, in <stringProp
-	 * name="HTTPSampler.domain">${host}/search</stringProp> 'stringProp' is the
-	 * tag name, 'name' an attribute name and 'HTTPSampler.domain' an attribute
 	 * value.
-	 * 
-	 * Their names follow the pattern ATTR (for attribute) + V (for value) +
-	 * abbreviation of their function. An "S" at the end signifies plural.
-	 * Underscores are used for readability.
-	 * 
-	 * Example: ATTRV_ACTION_URL for attributeValueActionUrl.
+	 * <p>
+	 * The elements of AttributeNameValue consist of a name, a {@link AttributeName},
+	 * and a String value. 
+	 * </p>
 	 */
+	public enum AttributeNameValue
+	{
+		ELEMENT_IS_PARAM(AttributeName.ELEMENT_TYPE, "HTTPArgument"),
 
-	// Various attributes of an action ...
+		ELEMENT_IS_VAR(AttributeName.ELEMENT_TYPE, "Argument"),
 
-	private final String ATTRV_ACTION_PROTOC = "HTTPSampler.protocol";
+		VAR_NAME(AttributeName.NAME, "Argument.name"),
 
-	private final String ATTRV_ACTION_WEBSITE = "HTTPSampler.domain";
+		VAR_VALUE(AttributeName.NAME, "Argument.value"),
 
-	private final String ATTRV_ACTION_PATH = "HTTPSampler.path";
+		ACTION_PROTOC(AttributeName.NAME, "HTTPSampler.protocol"),
 
-	private final String ATTRV_ACTION_METHOD = "HTTPSampler.method";
+		ACTION_WEBSITE(AttributeName.NAME, "HTTPSampler.domain"),
 
-	// variables and parameters ...
+		ACTION_PATH(AttributeName.NAME, "HTTPSampler.path"),
 
-	private final String ATTRV_ELE_ISPARAM = "HTTPArgument";
+		ACTION_METHOD(AttributeName.NAME, "HTTPSampler.method"),
 
-	private final String ATTRV_ACTION_PARAM = "Arguments.arguments";
+		// variables and parameters ...
 
-	private final String ATTRV_ENCODE_PARAM = "HTTPArgument.always_encode";
+		ACTION_PARAM(AttributeName.NAME, "Arguments.arguments"),
 
-	private final String ATTRV_PARAM_NAME = "Argument.name";
+		ENCODE_PARAM(AttributeName.NAME, "HTTPArgument.always_encode"),
 
-	private final String ATTRV_PARAM_VALUE = "Argument.value";
+		PARAM_NAME(AttributeName.NAME, "Argument.name"),
 
-	private final String ATTRV_ELE_ISVAR = "Argument";
+		PARAM_VALUE(AttributeName.NAME, "Argument.value"),
 
-	private final String ATTRV_VAR_NAME = "Argument.name";
+		// headers ...
 
-	private final String ATTRV_VAR_VALUE = "Argument.value";
+		HEADER_NAME(AttributeName.NAME, "Header.name"),
 
-	// Assertions ...
+		HEADER_VALUE(AttributeName.NAME, "Header.value"),
 
-	// if a variable should be validated it's name is inside this tag
+		// assertions ...
 
-	private final String ATTRV_ASSERT_VARIABLE = "Scope.variable";
+		ASSERT_VARIABLE(AttributeName.NAME, "Scope.variable"),
 
-	private final String ATTRV_ASSERT_FIELD_TO_TEST = "Assertion.test_field";
+		ASSERT_FIELD_TO_TEST(AttributeName.NAME, "Assertion.test_field"),
 
-	private final String ATTRV_ASSERT_VAL_MODE = "Assertion.test_type";
+		ASSERT_VAL_MODE(AttributeName.NAME, "Assertion.test_type"),
 
-	private final String ATTRV_ASSERT_IGNORE_STATUS = "Assertion.assume_success";
+		ASSERT_IGNORE_STATUS(AttributeName.NAME, "Assertion.assume_success"),
 
-	// XPath Extractor ...
+		// XPath Extractor ...
 
-	private final String ATTRV_XPATH_EXT_REFNAME = "XPathExtractor.refname";
+		XPATH_EXT_REFNAME(AttributeName.NAME, "XPathExtractor.refname"),
 
-	private final String ATTRV_XPATH_EXT_XPATH = "XPathExtractor.xpathQuery";
+		XPATH_EXT_XPATH(AttributeName.NAME, "XPathExtractor.xpathQuery"),
 
-	private final String ATTRV_XPath_EXT_FROM_VAR = "Scope.variable";
+		XPath_EXT_FROM_VAR(AttributeName.NAME, "Scope.variable"),
 
-	// Regex Extractor ...
+		// Regex Extractor ...
 
-	private final String ATTRV_REGEX_EXT_REFNAME = "RegexExtractor.refname";
+		REGEX_EXT_REFNAME(AttributeName.NAME, "RegexExtractor.refname"),
 
-	private final String ATTRV_REGEX_EXT_REGEX = "RegexExtractor.regex";
+		REGEX_EXT_REGEX(AttributeName.NAME, "RegexExtractor.regex"),
 
-	private final String ATTRV_REGEX_EXT_GROUP = "RegexExtractor.template";
+		REGEX_EXT_GROUP(AttributeName.NAME, "RegexExtractor.template"),
 
-	private final String ATTRV_REGEX_EXT_MATCH = "RegexExtractor.match_number";
+		REGEX_EXT_MATCH(AttributeName.NAME, "RegexExtractor.match_number"),
 
-	private final String ATTRV_REGEX_EXT_FROM_VAR = "Scope.variable";
+		REGEX_EXT_FROM_VAR(AttributeName.NAME, "Scope.variable"),
 
-	/**
-	 * Determines whether to extract from the resonse message, just the response body,
-	 * the resp. code or something else ...
-	 */
-	private final String ATTRV_REGEX_EXT_SCOPE = "RegexExtractor.useHeaders";
+		/**
+		 * Determines whether to extract from the resonse message, just the response body,
+		 * the resp. code or something else ...
+		 */
+		REGEX_EXT_SCOPE(AttributeName.NAME, "RegexExtractor.useHeaders");
+		
+		/**
+		 * The name if the attribute.
+		 */
+		private AttributeName name;
 
+		/**
+		 * The literal String that used as the value in the XML file.
+		 */
+		private final String xmlValue;
+
+		AttributeNameValue(AttributeName name, String value)
+		{
+			this.name = name;
+			this.xmlValue = value;
+		}
+	}
+	
 	/*
 	 * The following constants are used when important values are in the
 	 * character parts of the xml. For example in <stringProp
@@ -375,21 +269,21 @@ public class JmeterTranslater
 	// finally all the xml constants used in this class are defined ...
 
 	/**
-	 * if the getAttributeValue(ATTRNNAME) method was used but the attribute
-	 * wasn't found, it will return this value instead
+	 * If the {{@link #getAttributeValue(StartElement, String)} method was used but the attribute
+	 * wasn't found, it will return this value instead.
 	 */
 	private final String NOT_FOUND = "Attribute not found";
 
 	/**
 	 * If the respnse code should be validated (instead of the response data or
-	 * the response header), the selectionMode is temporarily set to this
+	 * the response header), the selectionMode is temporarily set to this.
 	 */
 	private final String VALIDATE_RESP_CODE = "respCode";
 
 	/*
-	 * the default settings for http protocol, website and path do not
-	 * exist in TSNC, which is why we use variables instead. The variable names
-	 * are defined here.
+	 * The default settings for http protocol, website and path do not
+	 * exist in TSNC. To simulate them, defaults are added to the interpreter with these
+	 * constants as keys. 
 	 */
 
 	private final String DEF_PROTOCOL = "defaultProtocol";
@@ -458,51 +352,43 @@ public class JmeterTranslater
 			// start reading and keep reading until the end
 			while (reader.hasNext())
 			{
-
-				// look for the next startElement
 				XMLEvent event = reader.nextEvent();
-				if (event.isStartElement())
+
+				// if it's the start of the test plan element
+				if (isStart(event, Tagname.TEST_PLAN))
 				{
+					testplanVariables.addAll(readVarsInTestPlan());
+				}
 
-					StartElement se = event.asStartElement();
-					String tagName = getTagName(se);
+				// if it's a Thread Group, create a new action. Thread Group = Action
+				if (isStart(event, Tagname.THREAD_GROUP))
+				{
+					String nameTGroup = getAttributeValue(event.asStartElement(), 
+							AttributeName.ACTION_NAME.xmlName);
+					XltLogger.runTimeLogger.info("Reading " + nameTGroup + "...");
 
-					// if it's a testplan
-					if (tagName.equals(Tagname.TEST_PLAN.xmlName))
+					// we don't want to take stuff from the last threadgroup with us ...
+					defaultParameters = new ArrayList<NameValuePair>();
+					XltProperties properties = XltProperties.getInstance();
+					GeneralDataProvider dataProvider = GeneralDataProvider.getInstance();
+					this.interpreter = new ParameterInterpreter(properties, dataProvider);
+
+					// but we do want the variables declared in the testplan
+					for (NameValuePair nvp : testplanVariables)
 					{
-						testplanVariables.addAll(readVarsInTestPlan());
-					}
-
-					// if it's a Thread Group
-					if (tagName.equals(TNAME_THREAD_GROUP))
-					{
-						String nameTGroup = getAttributeValue(se, ATTRN_ACTION_NAME);
-						XltLogger.runTimeLogger.info("Reading " + nameTGroup + "...");
-
-						// we don't want to take stuff from the last threadgroup with us ...
-						defaultParameters = new ArrayList<NameValuePair>();
-						XltProperties properties = XltProperties.getInstance();
-						GeneralDataProvider dataProvider = GeneralDataProvider.getInstance();
-						this.interpreter = new ParameterInterpreter(properties, dataProvider);
-
-						// but we do want the variables declared in the testplan
-						for (NameValuePair nvp : testplanVariables)
+						try
 						{
-							try
-							{
-								interpreter.set(nvp);
-							}
-							catch (EvalError e)
-							{
-								XltLogger.runTimeLogger.error("Coudn't set variable "
-										+ nvp.getName() + " : " + nvp.getValue()
-										+ " for some reason");
-							}
+							interpreter.set(nvp);
 						}
-
-						List<URLActionData> testCase = readThreadGroup();
-						threadGroups.put(nameTGroup, testCase);
+						catch (EvalError e)
+						{
+							XltLogger.runTimeLogger.error("Coudn't set variable " + nvp.getName()
+									+ " : " + nvp.getValue() + " for some reason");
+						}
 					}
+
+					List<URLActionData> testCase = readThreadGroup();
+					threadGroups.put(nameTGroup, testCase);
 				}
 			}
 		}
@@ -538,16 +424,9 @@ public class JmeterTranslater
 			event = reader.nextEvent();
 
 			// the way the correct tag is found here is somewhat sloppy
-			if (event.isStartElement())
+			if (hasAttribute(event, AttributeNameValue.ELEMENT_IS_VAR))
 			{
-				StartElement se = event.asStartElement();
-
-				String elementType = getAttributeValue(se, ATTRN_ELE_TYPE);
-
-				if (elementType.equals(ATTRV_ELE_ISVAR))
-				{
-					variables.add(readVariable());
-				}
+				variables.add(readVariable());
 			}
 		}
 
@@ -555,7 +434,7 @@ public class JmeterTranslater
 	}
 
 	/**
-	 * Reads a Jmeter threadgroup and all of it's content, which is aquivalent
+	 * Reads a Jmeter threadgroup and all of it's content, which is equivalent
 	 * to a TSNC test case.
 	 * 
 	 * @return a list of URLActionData objects to be returned by this builder
@@ -571,17 +450,18 @@ public class JmeterTranslater
 		XMLEvent event = reader.nextEvent();
 		while (!isEnd(event, Tagname.THREAD_GROUP))
 		{
-			 event = reader.nextEvent();
+			event = reader.nextEvent();
 
-			 // many of Jmeters Load Test Configurations are here
-			 // but we don't read them, so ...
+			// many of Jmeters Load Test Configurations are here
+			// but we don't read them, so ...
 		}
 
-		// read the content of the ThreadGroup the first tag should be right here,
+		// read the content of the ThreadGroup.
+		// The first tag should be right here,
 		// so there is no need to look for it
 
-		// Increment for every TNAME_CONTENT tag that opens, decrement for every
-		// TNAME_CONTENT tag that closes. Exit when zero is reached. (To make sure you exit
+		// Increment for every Tagname.CONTENT tag that opens, decrement for every
+		// tag that closes. Exit when you go down from one to zero.. (To make sure you exit
 		// with the right tag.)
 		int treeLevel = 0;
 		while (true)
@@ -598,64 +478,45 @@ public class JmeterTranslater
 				}
 			}
 
-
-			// check the events attribute name name and delegate to a
+			// check the events tag name and delegate to a
 			// subfunction accordingly
-			if (event.isStartElement())
+			if (isStart(event, Tagname.TEST_CONFIG))
 			{
-				StartElement se = event.asStartElement();
-				String name = getTagName(se);
-
-				switch (name)
-				{
-				case TNAME_TEST_CONFIG:
-				{
-
-					// read the defaults defined here
-					readDefaults();
-					break;
-				}
-				case TNAME_HEADERS:
-				{
-
-					// read default headers
-					List<NameValuePair> defaultHeaders = readHeaders();
-					actionBuilder.setDefaultHeaders(defaultHeaders);
-					break;
-				}
-				case TNAME_VARS:
-				{
-
-					// read the variables and stores them
-					readVariables();
-					break;
-				}
-				case TNAME_ACTION:
-				{
-
-					// an TNAME_ACTION is aquivalent to an HttpRequest
-					// is aquivalent to an action. get and set the testname
-					String actionName = getAttributeValue(se, ATTRN_ACTION_NAME);
-					URLActionData action = readAction(actionName);
-					testCaseActions.add(action);
-					break;
-				}
-				case TNAME_CONTENT:
-					treeLevel++;
-				default:
-				{
-					break;
-				}
-				}
+				// read the defaults defined here
+				readDefaults();
+			}
+			if (isStart(event, Tagname.HEADERS))
+			{
+				// read default headers
+				List<NameValuePair> defaultHeaders = readHeaders();
+				actionBuilder.setDefaultHeaders(defaultHeaders);
+			}
+			if (isStart(event, Tagname.VARS))
+			{
+				// read the variables and stores them
+				readVariables();
+			}
+			if (isStart(event, Tagname.ACTION))
+			{
+				// an Tagname.ACTION is equivalent to an HttpRequest,
+				// which is in turn equivalent to an action. Get and set the testname
+				String actionName = getAttributeValue(event.asStartElement(), 
+						AttributeName.ACTION_NAME.xmlName);
+				URLActionData action = readAction(actionName);
+				testCaseActions.add(action);
+			}
+			if (isStart(event, Tagname.CONTENT))
+			{
+				treeLevel++;
 			}
 		}
 		return testCaseActions;
 	}
 
 	/**
-	 * Is called inside of {@link #readThreadGroup} if the tag name of a
-	 * StartElement equals {@link #TNAME_VARS}. Reads multiple variables with
-	 * their names and values and stores them in the ParameterInterpreter.
+	 * Reads until it encounters a closing tag with the name of {@link Tagname#VARS}.
+	 * Reads multiple variables with their names and values and stores
+	 * them in the ParameterInterpreter.
 	 * 
 	 * @throws XMLStreamException
 	 */
@@ -664,40 +525,24 @@ public class JmeterTranslater
 
 		XltLogger.runTimeLogger.debug("Storing Variables ...");
 
-		// loop until the next element is an EndElement that closes
-		// the TNAME_VARS tag
-
 		XMLEvent event = reader.nextEvent();
 		while (!isEnd(event, Tagname.VARS))
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements ...
-			if (event.isStartElement())
+			if (isStart(event, Tagname.VAR)
+					&& hasAttribute(event, AttributeNameValue.ELEMENT_IS_VAR))
 			{
-				StartElement se = event.asStartElement();
+				NameValuePair nvp = readVariable();
 
-				// if it has the right tag name ...
-				String name = getTagName(se);
-				
-				// and has an 'elementType' attribute with the right value ...
-				String elementType = getAttributeValue(se, ATTRN_ELE_TYPE);
-
-				// if they both fit and it looks like a single argument,
-				// call the readArgument method to let it read it
-				if (name.equals(TNAME_VAR) && elementType.equals(ATTRV_ELE_ISVAR))
+				try
 				{
-					NameValuePair nvp = readVariable();
-
-					try
-					{
-						interpreter.set(nvp);
-					}
-					catch (EvalError e)
-					{
-						XltLogger.runTimeLogger.error("Coudn't set variable " + nvp.getName()
-								+ " : " + nvp.getValue() + " for some reason");
-					}
+					interpreter.set(nvp);
+				}
+				catch (EvalError e)
+				{
+					XltLogger.runTimeLogger.error("Coudn't set variable " + nvp.getName() + " : "
+							+ nvp.getValue() + " for some reason");
 				}
 			}
 		}
@@ -722,35 +567,15 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (hasAttribute(event, AttributeNameValue.VAR_NAME))
 			{
-				StartElement se = event.asStartElement();
-
-				// if the attribute for 'name' exists
-				String name = getAttributeValue(se, ATTRN_NAME);
-
-				// and it is the right String, get the content of the tag
-				// and save it as name or value, depending
-				switch (name)
-				{
-				case ATTRV_VAR_NAME:
-				{
-					event = reader.nextEvent();
-					argsName = getTagContent(event);
-					break;
-				}
-				case ATTRV_VAR_VALUE:
-				{
-					event = reader.nextEvent();
-					argsValue = getTagContent(event);
-					break;
-				}
-				default:
-				{
-					break;
-				}
-				}
+				event = reader.nextEvent();
+				argsName = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.VAR_VALUE))
+			{
+				event = reader.nextEvent();
+				argsValue = getTagContent(event);
 			}
 		}
 
@@ -774,59 +599,54 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			try
 			{
-				StartElement se = event.asStartElement();
+				// look for elements with the right attribute, delegate accordingly
 
-				// and get the attribute for 'name'
-				String name = getAttributeValue(se, ATTRN_NAME);
-
-				try
+				// a website field!
+				if (hasAttribute(event, AttributeNameValue.ACTION_WEBSITE))
 				{
-					switch (name)
+					event = reader.nextEvent();
+					if (event.isCharacters())
 					{
-					case ATTRV_ACTION_WEBSITE:
-						event = reader.nextEvent();
-						if (event.isCharacters())
-						{
-							NameValuePair nvp = new NameValuePair(DEF_WEBSITE, getTagContent(event));
-							interpreter.set(nvp);
-						}
-						break;
-
-					case ATTRV_ACTION_PATH:
-						event = reader.nextEvent();
-						if (event.isCharacters())
-						{
-							NameValuePair nvp = new NameValuePair(DEF_PATH, getTagContent(event));
-							interpreter.set(nvp);
-						}
-						break;
-
-					case ATTRV_ACTION_PROTOC:
-						event = reader.nextEvent();
-						if (event.isCharacters())
-						{
-							NameValuePair nvp = new NameValuePair(DEF_PROTOCOL,
-									getTagContent(event));
-							interpreter.set(nvp);
-						}
-						break;
-
-					case ATTRV_ACTION_PARAM:
-						defaultParameters = readParameters();
-						break;
-
-					default:
-						break;
+						NameValuePair nvp = new NameValuePair(DEF_WEBSITE, getTagContent(event));
+						interpreter.set(nvp);
 					}
 				}
-				catch (EvalError e)
+
+				// the path field - ie the thing after the website,
+				// "en" for somethign like "xceptance.com/en"
+				if (hasAttribute(event, AttributeNameValue.ACTION_PATH))
 				{
-					XltLogger.runTimeLogger.error("Coudn't set variable default protocol,"
-							+ " website or path for some reason");
+					event = reader.nextEvent();
+					if (event.isCharacters())
+					{
+						NameValuePair nvp = new NameValuePair(DEF_PATH, getTagContent(event));
+						interpreter.set(nvp);
+					}
 				}
+
+				// the http protocol!
+				if (hasAttribute(event, AttributeNameValue.ACTION_PROTOC))
+				{
+					event = reader.nextEvent();
+					if (event.isCharacters())
+					{
+						NameValuePair nvp = new NameValuePair(DEF_PROTOCOL, getTagContent(event));
+						interpreter.set(nvp);
+					}
+				}
+
+				// and the http parameters!
+				if (hasAttribute(event, AttributeNameValue.ACTION_PARAM))
+				{
+					defaultParameters = readParameters();
+				}
+			}
+			catch (EvalError e)
+			{
+				XltLogger.runTimeLogger.error("Coudn't set variable default protocol,"
+						+ " website or path for some reason");
 			}
 		}
 	}
@@ -835,7 +655,7 @@ public class JmeterTranslater
 	 * Should be called in {@link #readThreadGroup} to read the default headers
 	 * or {@link #readActionContent} to read the normal headers of an action.
 	 * 
-	 * @return a List of NameValuePairs aquivalent to the headers with name and
+	 * @return a List of NameValuePairs equivalent to the headers with name and
 	 *         value
 	 * @throws XMLStreamException
 	 */
@@ -849,18 +669,10 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (isStart(event, Tagname.HEADER))
 			{
-				StartElement se = event.asStartElement();
-
-				String tagName = getTagName(se);
-				if (tagName.equals(TNAME_HEADER))
-				{
-
-					NameValuePair header = readHeader();
-					headers.add(header);
-				}
+				NameValuePair header = readHeader();
+				headers.add(header);
 			}
 		}
 		return headers;
@@ -870,7 +682,7 @@ public class JmeterTranslater
 	 * Called in {@link #readHeaders}. Reads a single header and returns it as a
 	 * NameValuePair.
 	 * 
-	 * @return a NameValuePair aquivalent to a single header with name and value
+	 * @return a NameValuePair equivalent to a single header with name and value
 	 * @throws XMLStreamException
 	 */
 	private NameValuePair readHeader() throws XMLStreamException
@@ -883,26 +695,18 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			// read the name of the header
+			if (hasAttribute(event, AttributeNameValue.HEADER_NAME))
 			{
-				StartElement se = event.asStartElement();
+				event = reader.nextEvent();
+				name = getTagContent(event);
+			}
 
-				String attributeName = getAttributeValue(se, ATTRN_NAME);
-
-				switch (attributeName)
-				{
-				case "Header.name":
-					event = reader.nextEvent();
-					name = getTagContent(event);
-					break;
-				case "Header.value":
-					event = reader.nextEvent();
-					value = getTagContent(event);
-					break;
-				default:
-					break;
-				}
+			// and it's value
+			if (hasAttribute(event, AttributeNameValue.HEADER_VALUE))
+			{
+				event = reader.nextEvent();
+				value = getTagContent(event);
 			}
 		}
 		NameValuePair header = new NameValuePair(name, value);
@@ -911,7 +715,7 @@ public class JmeterTranslater
 
 	/**
 	 * Is called when the main parsing method {@link #readThreadGroup} comes
-	 * upon a StartElement for an action {@link #TNAME_ACTION}. Parses the file
+	 * upon an Http-Request/ an action {@link #TNAME_ACTION}. Parses the file
 	 * and creates the action with the appropriate properties. Returns the action
 	 * when it comes upon the EndElement.
 	 * 
@@ -945,83 +749,60 @@ public class JmeterTranslater
 		actionBuilder.setName(testName);
 		actionBuilder.setInterpreter(interpreter);
 
-		// keep reading until an EndElement with the tag name of
-		// TNAME_ACTION is the next element
+		// keep reading until an EndElement with the
+		// Tagname.ACTION is the next element
 		XMLEvent event = reader.nextEvent();
 		while (!isEnd(event, Tagname.ACTION))
 		{
 			event = reader.nextEvent();
+			// if the name attribute corresponds to an action parameter,
+			// set the appropriate action parameter to the content
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (hasAttribute(event, AttributeNameValue.ACTION_WEBSITE))
 			{
-				StartElement se = event.asStartElement();
-
-				// and get the attribute for 'name'
-				String name = getAttributeValue(se, ATTRN_NAME);
-
-				// if the name attribute corresponds to an action parameter,
-				// set the appropriate action parameter to the content
-				switch (name)
+				// read the url
+				event = reader.nextEvent();
+				if (event.isCharacters())
 				{
-
-				case ATTRV_ACTION_PROTOC:
-					// read the protocol
-					event = reader.nextEvent();
-					if (event.isCharacters())
-					{
-						protocol = event.asCharacters().getData();
-					}
-					break;
-				case ATTRV_ACTION_WEBSITE:
-				{
-					// read the url
-					event = reader.nextEvent();
-					if (event.isCharacters())
-					{
-						website = event.asCharacters().getData();
-					}
-					break;
+					website = event.asCharacters().getData();
 				}
-				case ATTRV_ACTION_PATH:
+			}
+			if (hasAttribute(event, AttributeNameValue.ACTION_PROTOC))
+			{
+				event = reader.nextEvent();
+				if (event.isCharacters())
 				{
-					// read the path. The path is added to the end of the URL.
-					// Example: url=www.otto.de, path: /herrenmode/
-					event = reader.nextEvent();
-					if (event.isCharacters())
-					{
-						path = event.asCharacters().getData();
-					}
-					break;
+					protocol = event.asCharacters().getData();
 				}
-				case ATTRV_ACTION_METHOD:
+			}
+			if (hasAttribute(event, AttributeNameValue.ACTION_PATH))
+			{
+				// read the path. The path is added to the end of the URL.
+				// Example: url=www.otto.de, path: /herrenmode/
+				event = reader.nextEvent();
+				if (event.isCharacters())
 				{
-					// read the method
-					event = reader.nextEvent();
-					String content = event.asCharacters().getData();
-					actionBuilder.setMethod(content);
-					break;
+					path = event.asCharacters().getData();
 				}
-				case ATTRV_ACTION_PARAM:
+			}
+			if (hasAttribute(event, AttributeNameValue.ACTION_METHOD))
+			{
+				// read the method
+				event = reader.nextEvent();
+				String content = event.asCharacters().getData();
+				actionBuilder.setMethod(content);
+			}
+			if (hasAttribute(event, AttributeNameValue.ACTION_PARAM))
+			{
+				// read the parameters
+				List<NameValuePair> parameters = readParameters();
+				// set the parameters
+				if (parameters != null)
 				{
-					// read the parameters
-					List<NameValuePair> parameters = readParameters();
-					// set the parameters
-					if (parameters != null)
-					{
-						actionBuilder.setParameters(parameters);
-					}
-					break;
-				}
-				default:
-				{
-					break;
-				}
+					actionBuilder.setParameters(parameters);
 				}
 			}
 		}
-
-		// add protocol, url and path together, set the url
 
 		// set the protocol to http if it wasn't specified yet
 		if (protocol == null)
@@ -1038,6 +819,7 @@ public class JmeterTranslater
 			logAndThrow(reason);
 		}
 
+		// add protocol, url and path together, set the url
 		String url = protocol + "://" + website + path;
 		actionBuilder.setUrl(url);
 
@@ -1049,7 +831,7 @@ public class JmeterTranslater
 	}
 
 	/**
-	 * Is called inside {@link #readAction} to read the parameters.
+	 * Is called inside {@link #readAction} to read the http parameters.
 	 * 
 	 * @return parameters
 	 * @throws XMLStreamException
@@ -1065,46 +847,30 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-//			if (isStart(event, Tagname.PARAM) && hasAttribute(event, Attribute.ELEMENT_IS_PARAM))
-//			{
-//				// read the single detected parameter
-//				parameters = readParameter(parameters);
-//			}
-//			// look for startelements ... TODO
-//			if (event.isStartElement())
-//			{
-//				StartElement se = event.asStartElement();
-//
-//				// and it's tag name is ATTRN_ELE_TYPE
-//				String name = getTagName(se);
-//				if (name.equals(TNAME_PARAM))
-//				{
-//
-//					// if the elementType attribute is 'HTTPArgument'
-//					String elementType = getAttributeValue(ATTRN_ELE_TYPE, se);
-//					if (elementType.equals(ATTRV_ELE_ISPARAM))
-//					{
-//						// read the single detected parameter
-//						parameters = readParameter(parameters);
-//					}
-//				}
-//			}
+			if (hasAttribute(event, AttributeNameValue.ELEMENT_IS_PARAM))
+			{
+				// read the single detected parameter
+				parameters = readParameter(parameters);
+			}
 		}
 
 		return parameters;
 	}
 
 	/**
-	 * Is called inside the readParameters method to parse a single parameter
+	 * Is called inside the readParameters method to parse a single parameter.
 	 * <p>
 	 * Parses a single Parameter with encoding, name and value. Sets the former and adds the
 	 * NameValuePair with name and value to the correct list.
 	 * </p>
 	 * 
 	 * @param parameters
-	 *            and the List of parameters which were already saved previously
+	 *            the List of parameters which were saved previously
 	 * 
 	 * @return
+	 *         the List of parameters which were saved previously and
+	 *         the newly saved ones
+	 * 
 	 * @throws XMLStreamException
 	 */
 	private List<NameValuePair> readParameter(List<NameValuePair> parameters)
@@ -1115,48 +881,26 @@ public class JmeterTranslater
 		String parameterName = null;
 		String parameterValue = null;
 
-		// loop until the loop is closed with an EndElement with the tag name
-		// TNAME_PARAM all parameters should be inside a single TNAME_PARAM tag
+		// read the parameter element one event at a time
 		XMLEvent event = reader.nextEvent();
 		while (!isEnd(event, Tagname.PARAM))
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (hasAttribute(event, AttributeNameValue.ENCODE_PARAM))
 			{
-				StartElement se = event.asStartElement();
-
-				String name = getAttributeValue(se, ATTRN_NAME);
-
-				// if the name attribute is the right String, get the content of
-				// the tag
-				// and set something, depending on the ATTRN_NAME value
-				switch (name)
-				{
-				case ATTRV_ENCODE_PARAM:
-				{
-					event = reader.nextEvent();
-					encoded = getTagContent(event);
-					break;
-				}
-				case ATTRV_PARAM_VALUE:
-				{
-					event = reader.nextEvent();
-					parameterValue = getTagContent(event);
-					break;
-				}
-				case ATTRV_PARAM_NAME:
-				{
-					event = reader.nextEvent();
-					parameterName = getTagContent(event);
-					break;
-				}
-				default:
-				{
-					break;
-				}
-				}
+				event = reader.nextEvent();
+				encoded = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.PARAM_NAME))
+			{
+				event = reader.nextEvent();
+				parameterName = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.PARAM_VALUE))
+			{
+				event = reader.nextEvent();
+				parameterValue = getTagContent(event);
 			}
 		}
 
@@ -1171,8 +915,8 @@ public class JmeterTranslater
 
 	/**
 	 * Reads the stuff inside an action, like Extractions and Assertions. Called
-	 * in {@link #readAction}. Reads until the {@link #TNAME_CONTENT} tag that
-	 * closes the {@link #TNAME_CONTENT} tag right after the action.
+	 * in {@link #readAction}. Reads until the {@link Tagname#CONTENT} tag that
+	 * closes the {@link Tagname#CONTENT} tag right after the action.
 	 * 
 	 * @throws XMLStreamException
 	 */
@@ -1212,73 +956,50 @@ public class JmeterTranslater
 			}
 
 			// look for StartElements
-			if (event.isStartElement())
+			if (isStart(event, Tagname.CONTENT))
 			{
-				StartElement se = event.asStartElement();
+				// we just went a bit further down in the tree
+				treeLevel++;
+			}
+			if (isStart(event, Tagname.VARS))
+			{
+				// read the variables and stores them
+				readVariables();
+			}
+			if (isStart(event, Tagname.ASSERT_RESP))
+			{
+				// check Response Assertion, add it to the actionBuilder
+				String name = getAttributeValue(event.asStartElement(),
+						AttributeName.ASSERT_NAME.xmlName);
+				readResponseAssertion(name);
+			}
+			if (isStart(event, Tagname.XPATH_EXTRACT))
+			{
+				// read the XPathExtractor
+				storeBuilder.setInterpreter(interpreter);
+				storeBuilder.setSelectionMode(URLActionDataStore.XPATH);
+				URLActionDataStore store = readXPathExtractor(reader, storeBuilder);
 
-				// get the tagname
-				String tagName = getTagName(se);
+				storeList.add(store);
+				storeBuilder.reset();
+			}
+			if (isStart(event, Tagname.REGEX_EXTRACT))
+			{
+				// read regexExtractor
+				String selectionMode = URLActionDataStore.REGEXP;
+				storeBuilder.setInterpreter(interpreter);
+				URLActionDataStore store = readRegexExtractor(selectionMode, reader, storeBuilder);
 
-				switch (tagName)
+				storeList.add(store);
+				storeBuilder.reset();
+			}
+			if (isStart(event, Tagname.HEADERS))
+			{
+				// read and set the headers for the action
+				List<NameValuePair> headers = readHeaders();
+				for (NameValuePair header : headers)
 				{
-				case TNAME_CONTENT:
-				{
-					// we just went a bit further down in the tree
-					treeLevel++;
-					break;
-				}
-				case TNAME_VARS:
-				{
-
-					// read the variables and stores them
-					readVariables();
-					break;
-				}
-				case TNAME_ASSERT_RESP:
-				{
-
-					// check Response Assertion, add it to the actionBuilder
-					String name = getAttributeValue(se, ATTRN_ASSERT_NAME);
-					readResponseAssertion(name);
-					break;
-				}
-				case TNAME_XPATH_EXTRACT:
-				{
-
-					// read the XPathExtractor
-					storeBuilder.setInterpreter(interpreter);
-					storeBuilder.setSelectionMode(URLActionDataStore.XPATH);
-					URLActionDataStore store = readXPathExtractor(reader, storeBuilder);
-
-					storeList.add(store);
-					storeBuilder.reset();
-					break;
-				}
-				case TNAME_REGEX_EXTRACT:
-				{
-
-					// read regexExtractor
-					String selectionMode = URLActionDataStore.REGEXP;
-					storeBuilder.setInterpreter(interpreter);
-					URLActionDataStore store = readRegexExtractor(selectionMode, reader,
-							storeBuilder);
-
-					storeList.add(store);
-					storeBuilder.reset();
-					break;
-				}
-				case TNAME_HEADERS:
-				{
-
-					// read and set the headers for the action
-					List<NameValuePair> headers = readHeaders();
-					for (NameValuePair header : headers)
-					{
-						actionBuilder.addHeader(header);
-					}
-				}
-				default:
-					break;
+					actionBuilder.addHeader(header);
 				}
 			}
 		}
@@ -1320,7 +1041,6 @@ public class JmeterTranslater
 
 		try
 		{
-
 			// loop until the loop is closed with an EndElement with the tag
 			// name TNAME_ASSERT_RESP
 			// all parameters should be inside a single TNAME_ASSERT_RESP tag
@@ -1329,67 +1049,48 @@ public class JmeterTranslater
 			{
 				event = reader.nextEvent();
 
-				// look for StartElements
-				if (event.isStartElement())
+				if (isStart(event, Tagname.ASSERT_ALL_VALUES))
 				{
+					// inside this tag are all the values that
+					// should be validated. Read them
+					allValidationContent = readAllValuesToValidate();
+				}
 
-					StartElement se = event.asStartElement();
-					String tagName = getTagName(se);
-
-					if (tagName.equals(TNAME_ASSERT_ALL_VALUES))
+				if (hasAttribute(event, AttributeNameValue.ASSERT_VARIABLE))
+				{
+					// shows that a variable should be validated
+					// and which variable to validate
+					selectionMode = URLActionDataValidation.VAR;
+					event = reader.nextEvent();
+					selectionContent = getTagContent(event);
+					selectionContent = "${" + selectionContent + "}";
+				}
+				if (hasAttribute(event, AttributeNameValue.ASSERT_FIELD_TO_TEST))
+				{
+					// determines the selectionMode unless it's VAR (from a
+					// variable)
+					event = reader.nextEvent();
+					String selectionModeInJmt = getTagContent(event);
+					selectionMode = getSelectionModeFromJmt(selectionModeInJmt, selectionMode);
+				}
+				if (hasAttribute(event, AttributeNameValue.ASSERT_VAL_MODE))
+				{
+					// determines the validationMode
+					event = reader.nextEvent();
+					int valModeInInt = Integer.parseInt(getTagContent(event));
+					validationMode = getValidationModeFromInt(valModeInInt);
+				}
+				if (hasAttribute(event, AttributeNameValue.ASSERT_IGNORE_STATUS))
+				{
+					// determines if the assertion should "Ignore Status"
+					// TSNC doesn't have an aquivalent. If this is true, it
+					// can't be mapped
+					event = reader.nextEvent();
+					String ignore = getTagContent(event);
+					if (ignore.equals("true"))
 					{
-
-						// inside the TNAME_ASSERT_ALL_CONTENT are all the
-						// values that
-						// should be validated. Read them
-						allValidationContent = readAllValuesToValidate();
-					}
-
-					String attrName = getAttributeValue(se, ATTRN_NAME);
-					switch (attrName)
-					{
-					case ATTRV_ASSERT_VARIABLE:
-
-						// shows that a variable should be validated
-						// and which variable to validate
-						selectionMode = URLActionDataValidation.VAR;
-						event = reader.nextEvent();
-						selectionContent = getTagContent(event);
-						selectionContent = "${" + selectionContent + "}";
-						break;
-
-					case ATTRV_ASSERT_FIELD_TO_TEST:
-
-						// determines the selectionMode unless it's VAR (from a
-						// variable)
-						event = reader.nextEvent();
-						String selectionModeInJmt = getTagContent(event);
-						selectionMode = getSelectionModeFromJmt(selectionModeInJmt, selectionMode);
-						break;
-
-					case ATTRV_ASSERT_VAL_MODE:
-
-						// determines the validationMode
-						event = reader.nextEvent();
-						int valModeInInt = Integer.parseInt(getTagContent(event));
-						validationMode = getValidationModeFromInt(valModeInInt);
-						break;
-
-					case ATTRV_ASSERT_IGNORE_STATUS:
-
-						// determines if the assertion should "Ignore Status"
-						// TSNC doesn't have an aquivalent. If this is true, it
-						// can't be mapped
-						event = reader.nextEvent();
-						String ignore = getTagContent(event);
-						if (ignore.equals("true"))
-						{
-							XltLogger.runTimeLogger.warn("Ignore Status at can't be mapped "
-									+ "to TSNC.");
-						}
-
-					default:
-						break;
+						XltLogger.runTimeLogger.warn("Ignore Status at can't be mapped "
+								+ "to TSNC.");
 					}
 				}
 			}
@@ -1425,7 +1126,7 @@ public class JmeterTranslater
 
 	/**
 	 * Maps the value from Jmeters Pattern Matching Rules to TSNCs
-	 * selectionMode. Called in {@link #readResponseAssertion}. </br>
+	 * selectionMode. Called in {@link #readResponseAssertion}.
 	 * 
 	 * @param selectionModeInJmt
 	 *            the rough aquivalent to the selectionMode in Jmeter, an
@@ -1573,7 +1274,7 @@ public class JmeterTranslater
 
 	/**
 	 * Called in the {@link #readResponseAssertion} method. Reads until the end
-	 * of an {@link #TNAME_ASSERT_CONTENT} tag and returns a list of the values
+	 * of an {@link Tagname#ASSERT_ALL_VALUES} tag and returns a list of the values
 	 * that should be validated. Ie multiple validationContent values from
 	 * {@link URLActionDataValidation} which will be used to build multiple
 	 * validation objects
@@ -1591,23 +1292,13 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (isStart(event, Tagname.ASSERT_ONE_CONTENT))
 			{
-
-				StartElement se = event.asStartElement();
-				String tagName = getTagName(se);
-
-				// if the tag name is equal to ...
-				if (tagName.equals(TNAME_ASSERT_ONE_CONTENT))
-				{
-
-					// one content was found. Read it and
-					// put it on the list
-					event = reader.nextEvent();
-					String content = getTagContent(event);
-					allValidationContent.add(content);
-				}
+				// one content was found. Read it and
+				// put it on the list
+				event = reader.nextEvent();
+				String content = getTagContent(event);
+				allValidationContent.add(content);
 			}
 		}
 
@@ -1721,8 +1412,8 @@ public class JmeterTranslater
 
 	/**
 	 * Should be called when the {@link #readActionContent} method comes upon a
-	 * {@link #TNAME_XPATH_EXTRACT} tag. Reads until the end of the {@link #TNAME_XPATH_EXTRACT} tag
-	 * and returns an {@link URLActionDataStore} object.
+	 * {@link Tagname#XPATH_EXTRACT} tag. Reads until the end of the {@link #TNAME_XPATH_EXTRACT}
+	 * tag and returns an {@link URLActionDataStore} object.
 	 * 
 	 * @param reader
 	 *            the XMLEventReader with it's position
@@ -1739,55 +1430,32 @@ public class JmeterTranslater
 		String name = null;
 		String selectionContent = null;
 
-		// loop until the loop is closed with an EndElement with the tag name
-		// TNAME_XPATH_EXTRACT
-		// all parameters should be inside a single TNAME_XPATH_EXTRACT tag
+		// loop ...
+		// all parameters should be inside a single Tagname.XPATH_EXTRACT tag
 		XMLEvent event = reader.nextEvent();
 		while (!isEnd(event, Tagname.XPATH_EXTRACT))
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (hasAttribute(event, AttributeNameValue.XPATH_EXT_REFNAME))
 			{
+				event = reader.nextEvent();
+				name = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.XPATH_EXT_XPATH))
+			{
+				event = reader.nextEvent();
+				selectionContent = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.XPath_EXT_FROM_VAR))
+			{
+				// exists if it should extract from a variable.
+				// that's impossible in TSNC, so just log and throw.
 
-				StartElement se = event.asStartElement();
-
-				String attrName = getAttributeValue(se, ATTRN_NAME);
-
-				// if the name attribute is the right String, get the content of
-				// the tag
-				// and set something, depending on the ATTRNNAME value
-				switch (attrName)
-				{
-
-				case ATTRV_XPATH_EXT_REFNAME:
-				{
-					event = reader.nextEvent();
-					name = getTagContent(event);
-					break;
-				}
-				case ATTRV_XPATH_EXT_XPATH:
-				{
-					event = reader.nextEvent();
-					selectionContent = getTagContent(event);
-					break;
-				}
-
-				case ATTRV_XPath_EXT_FROM_VAR:
-					// exists if it should extract from a variable.
-					// that's impossible in TSNC, so just log and throw.
-
-					String reason = "XPath Extractor " + name
-							+ " should extract from a variable. Since TSNC always extracts from "
-							+ "the first match. That is unfortunately impossible in TSNC.";
-					logAndThrow(reason);
-
-				default:
-				{
-					break;
-				}
-				}
+				String reason = "XPath Extractor " + name
+						+ " should extract from a variable. Since TSNC always extracts from "
+						+ "the first match. That is unfortunately impossible in TSNC.";
+				logAndThrow(reason);
 			}
 		}
 
@@ -1799,8 +1467,8 @@ public class JmeterTranslater
 
 	/**
 	 * Should be called when the {@link #readActionContent} method comes upon a
-	 * {@link TNAME_REGEX_EXTRACT} tag. Reads until the end of the {@link TNAME_REGEX_EXTRACT} tag
-	 * and returns an URLActionDataStore object.
+	 * {@link Tagname.REGEX_EXTRACT} tag. Reads until the end of the {@link Tagname.REGEX_EXTRACT}
+	 * tag and returns an URLActionDataStore object.
 	 * 
 	 * @param selectionMode
 	 * @param reader
@@ -1824,118 +1492,95 @@ public class JmeterTranslater
 		{
 			event = reader.nextEvent();
 
-			// look for StartElements
-			if (event.isStartElement())
+			if (hasAttribute(event, AttributeNameValue.REGEX_EXT_REFNAME))
 			{
+				// get the name of the variable to create
+				event = reader.nextEvent();
+				name = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.REGEX_EXT_REGEX))
+			{
+				// get the regex
+				event = reader.nextEvent();
+				selectionContent = getTagContent(event);
+			}
+			if (hasAttribute(event, AttributeNameValue.REGEX_EXT_GROUP))
+			{
+				// get/ determine if a subSelectionMode is needed
 
-				StartElement se = event.asStartElement();
-
-				String attrName = getAttributeValue(se, ATTRN_NAME);
-
-				// if the name attribute is the right String, get the content of
-				// the tag and set something, depending on the ATTRNNAME value
-				switch (attrName)
+				event = reader.nextEvent();
+				if (event.isCharacters())
 				{
-
-				case ATTRV_REGEX_EXT_REFNAME:
-				{
-					// get the name of the variable to create
-
-					event = reader.nextEvent();
-					name = getTagContent(event);
-					break;
+					group = getTagContent(event);
 				}
-				case ATTRV_REGEX_EXT_REGEX:
+				else
 				{
-					// get the regex
-
-					event = reader.nextEvent();
-					selectionContent = getTagContent(event);
-					break;
+					// set the default = 0;
+					group = "$0$";
 				}
-				case ATTRV_REGEX_EXT_GROUP:
+			}
+			if (hasAttribute(event, AttributeNameValue.REGEX_EXT_MATCH))
+			{
+				// the match specifies from which match to extract from.
+				// since TSNC always extracts from the first match it
+				// logs a warning at "random" (=0) and an error at 2,3,4
+				// ...
+
+				event = reader.nextEvent();
+				if (event.isCharacters())
 				{
-					// get/ determine if a subSelectionMode is needed
+					int match = Integer.parseInt(getTagContent(event));
 
-					event = reader.nextEvent();
-					if (event.isCharacters())
+					if (match == 0)
 					{
-						group = getTagContent(event);
+						XltLogger.runTimeLogger.warn("Regex Extractor " + name
+								+ " should extract from a random match. That is impossible in "
+								+ "TSNC. It will extract from the first match instead.");
 					}
-					else
+					if (1 < match)
 					{
-						// set the default = 0;
-						group = "$0$";
-					}
-					break;
-				}
-				case ATTRV_REGEX_EXT_MATCH:
-					// the match specifies from which match to extract from.
-					// since TSNC always extracts from the first match it
-					// logs a warning at "random" (=0) and an error at 2,3,4
-					// ...
-
-					event = reader.nextEvent();
-					if (event.isCharacters())
-					{
-						int match = Integer.parseInt(getTagContent(event));
-
-						if (match == 0)
-						{
-							XltLogger.runTimeLogger.warn("Regex Extractor " + name
-									+ " should extract from a random match. That is impossible in "
-									+ "TSNC. It will extract from the first match instead.");
-						}
-						if (1 < match)
-						{
-							String reason = "Can only extract from first match. " + name
-									+ " intented to extract from a later match.";
-							logAndThrow(reason);
-						}
-					}
-
-					else
-					{
-						// no match was set, log a warning and use the first
-						// match
-						// not like TSNC can do anything else
-						XltLogger.runTimeLogger.warn("No match was set for Regex Extractor " + name
-								+ "." + " Extracting from first match ... ");
-					}
-					// end match ...
-					break;
-
-				case ATTRV_REGEX_EXT_FROM_VAR:
-					// exists if it should extract from a variable.
-					// that's impossible in TSNC, so just log and throw.
-
-					if (event.isCharacters())
-					{
-						String reason = "Regex Extractor "
-								+ name
-								+ " should extract from a variable. That is unfortunately impossible in TSNC.";
+						String reason = "Can only extract from first match. " + name
+								+ " intented to extract from a later match.";
 						logAndThrow(reason);
 					}
-
-				case ATTRV_REGEX_EXT_SCOPE:
-					// if we should extract from header, code, URL or anything but the body.
-					// we can't, so just log and throw
-
-					event = reader.nextEvent();
-					String content = getTagContent(event);
-					if (!(content.equals("as document") || content.equals("unescaped") || content
-							.equals("false")))
-					{
-
-						String reason = "Regex Extractor " + name
-								+ " should extract from something other then the response body";
-						logAndThrow(reason);
-					}
-
-				default:
-				{
-					break;
 				}
+
+				else
+				{
+					// no match was set, log a warning and use the first
+					// match
+					// not like TSNC can do anything else
+					XltLogger.runTimeLogger.warn("No match was set for Regex Extractor " + name
+							+ "." + " Extracting from first match ... ");
+				}
+			}
+			if (hasAttribute(event, AttributeNameValue.REGEX_EXT_FROM_VAR))
+			{
+				// exists if it should extract from a variable.
+				// that's impossible in TSNC, so just log and throw.
+
+				if (event.isCharacters())
+				{
+					String reason = "Regex Extractor "
+							+ name
+							+ " should extract from a variable. That is unfortunately impossible in TSNC.";
+					logAndThrow(reason);
+				}
+			}
+			if (hasAttribute(event, AttributeNameValue.REGEX_EXT_SCOPE))
+			{
+				// if we should extract from header, code, URL or anything but the body.
+				// we can't, so just log and throw
+
+				event = reader.nextEvent();
+				String content = getTagContent(event);
+				if (!(content.equals("as document") || content.equals("unescaped") || content
+						.equals("false")))
+				{
+
+					String reason = "Regex Extractor " + name
+							+ " should extract from something other then the response body";
+					logAndThrow(reason);
 				}
 			}
 		}
@@ -1994,7 +1639,7 @@ public class JmeterTranslater
 
 		return false;
 	}
-	
+
 	/**
 	 * True if the passed event is an {@link EndElement} with the passed tagname.
 	 * False otherwise.
@@ -2018,23 +1663,27 @@ public class JmeterTranslater
 
 		return false;
 	}
-	
+
 	/**
 	 * Checks if the passed event is a start element and has the given attribute.
-	 * The latter means the start element has an attribute with the correct name and 
+	 * The latter means the start element has an attribute with the correct name and
 	 * value.
 	 * 
 	 * @param event
 	 * @param attribute
 	 * @return
 	 */
-	private boolean hasAttribute(XMLEvent event, Attribute attribute)
+	private boolean hasAttribute(XMLEvent event, AttributeNameValue attribute)
 	{
 		if (event.isStartElement())
 		{
 			StartElement se = event.asStartElement();
-			
-			if (getAttributeValue(se, attribute.))
+			String attrValue = getAttributeValue(se, attribute.name.xmlName);
+
+			if (attrValue.equals(attribute.xmlValue))
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -2073,6 +1722,7 @@ public class JmeterTranslater
 	 * Gets the attributeValue from a StartElement and an attribute name. </br>
 	 * Returns the value of the {@link #NOTFOUND} constant if no attribute with
 	 * that name exists.
+	 * 
 	 * @param se
 	 *            the StartElement from which we want to get the value
 	 * @param attributeName
